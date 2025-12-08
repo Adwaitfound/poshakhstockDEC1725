@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poshakh Stock Manager v21</title>
+
+    <!-- 1. TAILWIND CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. CONFIG -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand': {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            DEFAULT: '#2e7d32', // Primary Green
+                            600: '#16a34a',
+                            800: '#166534',
+                        },
+                        'outfit': {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            DEFAULT: '#7c3aed', // Violet
+                            600: '#6d28d9',
+                        },
+                        'accent': {
+                            DEFAULT: '#B47C00', // Gold
+                        },
+                        'dark-contrast': '#334155',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -5px rgba(0, 0, 0, 0.05)',
+                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FONTS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .safe-area-bottom {
+            padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .modal-enter {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #2e7d32;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <!-- FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, addDoc, serverTimestamp, getDoc, updateDoc, increment, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.firebase = {
+            initializeApp, getAuth, signInAnonymously, onAuthStateChanged,
+            getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, addDoc, serverTimestamp, getDoc, updateDoc, increment, getDocs, where
+        };
+        window.FIREBASE_MODULES_LOADED = true;
+    </script>
+
+    <!-- REACT -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- APP SCRIPT -->
+    <script type="text/babel">
+
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDUK-H7scDD-9t_yVASmG34ypw7AlKwNTY",
+            authDomain: "poshakh-stock.firebaseapp.com",
+            projectId: "poshakh-stock",
+            storageBucket: "poshakh-stock.firebasestorage.app",
+            messagingSenderId: "97524547700",
+            appId: "1:97524547700:web:08f8d39ed9be7ec75a9121"
+        };
+
+        const FABRICS_COLLECTION = 'fabrics';
+        const ORDERS_COLLECTION = 'production_orders';
+        const AVERAGE_SELLING_PRICE = 1500;
+        const MAX_FILE_SIZE_BYTES = 750 * 1024;
+
+        // --- ICONS ---
+        const Icons = {
+            Home: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+            Box: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
+            Trend: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
+            Plus: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            Minus: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            Trash2: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M5 6L6 6L6 6"></path><line x1="15" y1="3" x2="9" y2="3"></line></svg>,
+            Camera: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>,
+            Image: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
+            Search: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+            X: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            Alert: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
+            DollarSign: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>,
+            Scissors: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>,
+            Clock: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+            Pencil: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>,
+            Save: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>,
+            Link: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>,
+            MapPin: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+            Clipboard: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>,
+            Truck: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>,
+            Stack: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>,
+            Filter: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>,
+            CheckCircle: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+            Lock: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        };
+
+        // --- HELPERS ---
+        const fileToBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+        });
+
+        const getBase64ByteSize = (dataUrl) => {
+            if (!dataUrl) return 0;
+            const base64String = dataUrl.split(',')[1];
+            return Math.ceil(base64String.length * 3 / 4);
+        };
+
+        // --- MAIN APP ---
+        const App = () => {
+            const { useState, useEffect, useMemo, useRef } = React;
+            const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, addDoc, serverTimestamp, getDoc, updateDoc, increment, getDocs, where } = window.firebase;
+
+            // --- STATE ---
+            const [db, setDb] = useState(null);
+            const [userId, setUserId] = useState(null);
+            const [userEmail, setUserEmail] = useState('User');
+
+            const [inventoryItems, setInventoryItems] = useState([]);
+            const [allOrders, setAllOrders] = useState([]); // Stores all orders
+
+            const [loading, setLoading] = useState(true);
+            const [operationalError, setOperationalError] = useState(null);
+            const [isUploading, setIsUploading] = useState(false);
+
+            // UI State
+            const [activeTab, setActiveTab] = useState('home');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [inventoryFilter, setInventoryFilter] = useState('all');
+            const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+
+            // Order UI State
+            const [orderFilterStatus, setOrderFilterStatus] = useState('active');
+            const [orderSort, setOrderSort] = useState('date_desc');
+
+            // Stock Adjustment State
+            const [isStockAdjusting, setIsStockAdjusting] = useState(false);
+            const [adjustmentType, setAdjustmentType] = useState(null);
+            const [adjustmentItemId, setAdjustmentItemId] = useState(null);
+            const [adjustmentAmount, setAdjustmentAmount] = useState('');
+            const [adjustmentSize, setAdjustmentSize] = useState('M');
+
+            // Editing
+            const [editingId, setEditingId] = useState(null);
+            const [editForm, setEditForm] = useState(null);
+            const [editImageFile, setEditImageFile] = useState(null);
+
+            // Order Processing State
+            const [shippingOrderId, setShippingOrderId] = useState(null);
+            const [shippingForm, setShippingForm] = useState({ sellingPrice: '', shippingCost: '', otherExpenses: '' });
+            const [sellingPrice, setSellingPrice] = useState('');
+            const [receivingOrderId, setReceivingOrderId] = useState(null);
+
+            // Deletion Security State
+            const [deleteOrderTargetId, setDeleteOrderTargetId] = useState(null);
+            const [deletePassword, setDeletePassword] = useState('');
+
+            // Forms
+            const [addItemType, setAddItemType] = useState('fabric');
+            const [newItem, setNewItem] = useState({ name: '', websiteProductName: '', totalLength: '', unit: 'meters', costPerMeter: '', lengthRequiredPerOutfit: '', parentFabricId: '', stockBreakdown: { S: 0, M: 0, L: 0, XL: 0, XXL: 0 }, location: '' });
+            const [newImageFile, setNewImageFile] = useState(null);
+
+            // Order Form & Batch
+            const [orderForm, setOrderForm] = useState({ orderNumber: '', fabricId: '', lengthToCut: '', outfitName: '', customerName: '', size: 'M', stitchingCost: '', acquisitionCost: '' });
+            const [productionQueue, setProductionQueue] = useState([]);
+
+            // Refs
+            const cameraInputRef = useRef(null);
+            const galleryInputRef = useRef(null);
+            const editCameraRef = useRef(null);
+            const editGalleryRef = useRef(null);
+
+            // History
+            const [historyItemId, setHistoryItemId] = useState(null);
+            const [transactionHistory, setTransactionHistory] = useState([]);
+            const [deleteLogConfirmationId, setDeleteLogConfirmationId] = useState(null);
+
+            // --- INIT & LISTENERS ---
+            useEffect(() => {
+                try {
+                    const app = initializeApp(FIREBASE_CONFIG);
+                    const firestore = getFirestore(app);
+                    const auth = getAuth(app);
+                    setDb(firestore);
+                    signInAnonymously(auth).catch(e => console.error(e));
+                    onAuthStateChanged(auth, u => {
+                        if (u) { setUserId(u.uid); setUserEmail(u.email || `User-${u.uid.substring(0, 4)}`); }
+                        setLoading(false);
+                    });
+                } catch (e) { setLoading(false); }
+            }, []);
+
+            useEffect(() => {
+                if (!db) return;
+                const unsub = onSnapshot(query(collection(db, FABRICS_COLLECTION)), (snap) => {
+                    const validDocs = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(d => d && d.name);
+                    setInventoryItems(validDocs.map(d => {
+                        const type = d.type || 'fabric';
+                        const cl = parseFloat(d.currentLength) || 0;
+                        const req = parseFloat(d.lengthRequiredPerOutfit) || 1;
+                        const cost = parseFloat(d.costPerMeter) || 0;
+                        return {
+                            ...d, type,
+                            currentLength: cl, lengthRequiredPerOutfit: req, costPerMeter: cost,
+                            potentialOutfits: type === 'fabric' ? Math.floor(cl / req) : 0,
+                            totalCurrentCost: type === 'fabric' ? cl * cost : 0,
+                            totalLength: parseFloat(d.totalLength) || 0
+                        };
+                    }));
+                });
+                return () => unsub();
+            }, [db]);
+
+            useEffect(() => {
+                if (!db) return;
+                const unsub = onSnapshot(query(collection(db, ORDERS_COLLECTION)), (snap) => {
+                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o && o.orderNumber);
+                    setAllOrders(list);
+                });
+                return () => unsub();
+            }, [db]);
+
+            useEffect(() => {
+                if (!db || !historyItemId) { setTransactionHistory([]); return; }
+                const unsub = onSnapshot(query(collection(doc(db, FABRICS_COLLECTION, historyItemId), 'history')), (snap) => {
+                    setTransactionHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.usedAt?.toMillis() || 0) - (a.usedAt?.toMillis() || 0)));
+                }, (e) => console.log(e));
+                return () => unsub();
+            }, [db, historyItemId]);
+
+            // --- COMPUTED DATA ---
+            const financialMetrics = useMemo(() => {
+                const totalStockValue = inventoryItems.filter(i => i.type === 'fabric').reduce((acc, f) => acc + f.totalCurrentCost, 0);
+
+                const shippedOrders = allOrders.filter(f => f.status === 'Order Shipped (Completed)');
+                const totalRevenue = shippedOrders.reduce((acc, f) => acc + (f.finalSellingPrice || 0), 0);
+
+                let totalProfit = 0;
+                let dailyProfit = 0; // NEW: Daily Profit
+                let totalFabricCost = 0;
+                let totalStitchingCost = 0;
+                let totalAcquisitionCost = 0;
+                let totalShippingCost = 0;
+                let totalOtherCost = 0;
+
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+
+                shippedOrders.forEach(order => {
+                    const fabric = inventoryItems.find(i => i.id === order.fabricId) || { costPerMeter: 0 };
+                    const matCost = (order.cutAmount || 0) * fabric.costPerMeter;
+                    const stitch = order.stitchingCost || 0;
+                    const acq = order.acquisitionCost || 0;
+                    const ship = order.shippingCost || 0;
+                    const other = order.otherExpenses || 0;
+                    const revenue = order.finalSellingPrice || 0;
+
+                    totalFabricCost += matCost;
+                    totalStitchingCost += stitch;
+                    totalAcquisitionCost += acq;
+                    totalShippingCost += ship;
+                    totalOtherCost += other;
+
+                    const profit = (revenue - matCost - stitch - acq - ship - other);
+                    totalProfit += profit;
+
+                    if (order.updatedAt && order.updatedAt.toDate() >= todayStart) {
+                        dailyProfit += profit;
+                    }
+                });
+
+                const totalSold = shippedOrders.length;
+                const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+                const aov = totalSold > 0 ? totalRevenue / totalSold : 0;
+
+                const statusCounts = { tailor: 0, received: 0, shipped: 0 };
+                allOrders.forEach(o => {
+                    if (o.status === 'Sent to Tailor') statusCounts.tailor++;
+                    if (o.status === 'Received from Tailor') statusCounts.received++;
+                    if (o.status === 'Order Shipped (Completed)') statusCounts.shipped++;
+                });
+
+                // Trend Data
+                const last7Days = Array(7).fill(0);
+                const today = new Date();
+                allOrders.forEach(o => {
+                    if (o.createdAt) {
+                        const date = o.createdAt.toDate();
+                        const diffTime = Math.abs(today - date);
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        if (diffDays < 7) last7Days[6 - diffDays]++;
+                    }
+                });
+
+                return {
+                    totalStockValue: totalStockValue.toFixed(0),
+                    totalItems: inventoryItems.length,
+                    totalRevenue: totalRevenue.toFixed(0),
+                    totalProfit: totalProfit.toFixed(0),
+                    dailyProfit: dailyProfit.toFixed(0),
+                    totalSold,
+                    aov: aov.toFixed(0),
+                    netProfitPercent: profitMargin.toFixed(1),
+                    statusCounts,
+                    breakdown: { fabric: totalFabricCost, stitch: totalStitchingCost, ops: totalAcquisitionCost + totalShippingCost + totalOtherCost, profit: totalProfit },
+                    trendData: last7Days
+                };
+            }, [inventoryItems, allOrders]);
+
+            const inventoryList = useMemo(() => {
+                let list = [...inventoryItems];
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    list = list.filter(f => (f.name && f.name.toLowerCase().includes(term)) || (f.websiteProductName && f.websiteProductName.toLowerCase().includes(term)) || (f.location && f.location.toLowerCase().includes(term)));
+                }
+                if (inventoryFilter === 'fabrics') list = list.filter(i => i.type === 'fabric');
+                if (inventoryFilter === 'outfits') list = list.filter(i => i.type === 'outfit');
+                if (inventoryFilter === 'low') list = list.filter(f => f.type === 'fabric' && f.currentLength < 5);
+
+                list.sort((a, b) => {
+                    if (a.type !== b.type) return a.type === 'outfit' ? -1 : 1;
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+                return list;
+            }, [inventoryItems, searchTerm, inventoryFilter]);
+
+            const filteredOrders = useMemo(() => {
+                let list = [...allOrders];
+                if (orderFilterStatus === 'active') {
+                    list = list.filter(o => o.status !== 'Cancelled' && o.status !== 'Order Shipped (Completed)');
+                } else if (orderFilterStatus === 'completed') {
+                    list = list.filter(o => o.status === 'Order Shipped (Completed)' || o.status === 'Cancelled');
+                }
+
+                list.sort((a, b) => {
+                    const dateA = a.createdAt?.toMillis() || 0;
+                    const dateB = b.createdAt?.toMillis() || 0;
+                    if (orderSort === 'date_desc') return dateB - dateA;
+                    if (orderSort === 'date_asc') return dateA - dateB;
+                    if (orderSort === 'order_asc') return (a.orderNumber || '').localeCompare(b.orderNumber || '');
+                    return 0;
+                });
+                return list;
+            }, [allOrders, orderFilterStatus, orderSort]);
+
+            const fabricOptions = useMemo(() => inventoryItems.filter(i => i.type === 'fabric' && i.currentLength > 0), [inventoryItems]);
+            const outfitOptions = useMemo(() => inventoryItems.filter(i => i.type === 'outfit'), [inventoryItems]);
+
+            // --- BATCH ACTIONS ---
+            const handleAddToQueue = (e) => {
+                e.preventDefault();
+                const { orderNumber, fabricId, lengthToCut, customerName, outfitName, size, stitchingCost, acquisitionCost } = orderForm;
+                const cutAmount = parseFloat(lengthToCut);
+                const stitch = parseFloat(stitchingCost) || 0;
+                const acq = parseFloat(acquisitionCost) || 0;
+
+                if (isNaN(cutAmount) || cutAmount <= 0) { setOperationalError("Invalid Cut Amount."); return; }
+                if (!fabricId || !orderNumber) { setOperationalError("Fabric and Order # required."); return; }
+
+                const fabric = inventoryItems.find(f => f.id === fabricId);
+                const item = {
+                    ...orderForm,
+                    fabricName: fabric?.name || 'Unknown',
+                    unit: fabric?.unit || 'm',
+                    cutAmount, stitchingCost: stitch, acquisitionCost: acq,
+                    imageUrl: fabric?.imageUrl || ''
+                };
+                setProductionQueue([...productionQueue, item]);
+                setOrderForm({ ...orderForm, lengthToCut: '', outfitName: '', customerName: '', stitchingCost: '', acquisitionCost: '' });
+                setOperationalError(null);
+            };
+
+            const removeQueueItem = (idx) => setProductionQueue(productionQueue.filter((_, i) => i !== idx));
+
+            const handleBatchSubmit = async () => {
+                setIsUploading(true);
+                try {
+                    const promises = productionQueue.map(async (item) => {
+                        const fabricRef = doc(db, FABRICS_COLLECTION, item.fabricId);
+                        await updateDoc(fabricRef, { currentLength: increment(-item.cutAmount), updatedAt: serverTimestamp() });
+                        await addDoc(collection(db, ORDERS_COLLECTION), {
+                            fabricId: item.fabricId, fabricName: item.fabricName, outfitName: item.outfitName,
+                            orderNumber: item.orderNumber, customerName: item.customerName, cutAmount: item.cutAmount,
+                            unit: item.unit, size: item.size,
+                            stitchingCost: item.stitchingCost, acquisitionCost: item.acquisitionCost, // COSTS
+                            imageUrl: item.imageUrl, status: 'Sent to Tailor', usedByEmail: userEmail, createdAt: serverTimestamp()
+                        });
+                        await addDoc(collection(fabricRef, 'history'), { amountUsed: item.cutAmount, orderNumber: item.orderNumber, productName: item.outfitName, status: 'Sent to Tailor', type: 'CUT', usedByEmail: userEmail, usedAt: serverTimestamp() });
+                    });
+                    await Promise.all(promises);
+                    setProductionQueue([]);
+                    setOperationalError("Batch processed!");
+                    setActiveTab('orders');
+                } catch (err) { setOperationalError("Batch failed: " + err.message); }
+                setIsUploading(false);
+            };
+
+            // --- SINGLE ACTIONS ---
+            const handleCancelOrder = async (order) => {
+                if (!confirm(`Cancel Order ${order.orderNumber}?`)) return;
+                try {
+                    const fabricRef = doc(db, FABRICS_COLLECTION, order.fabricId);
+                    await updateDoc(fabricRef, { currentLength: increment(order.cutAmount) });
+                    await updateDoc(doc(db, ORDERS_COLLECTION, order.id), { status: 'Cancelled', updatedAt: serverTimestamp() });
+                    setOperationalError("Order Cancelled.");
+                } catch (e) { setOperationalError("Cancel failed: " + e.message); }
+            };
+
+            const handleDeleteOrder = async () => {
+                if (deletePassword !== 'posh123') {
+                    setOperationalError("Incorrect Password!");
+                    return;
+                }
+                try {
+                    await deleteDoc(doc(db, ORDERS_COLLECTION, deleteOrderTargetId));
+                    setDeleteOrderTargetId(null);
+                    setDeletePassword('');
+                    setOperationalError("Order Record Deleted.");
+                } catch (e) {
+                    setOperationalError("Delete failed: " + e.message);
+                }
+            };
+
+            const handleQuickReceive = async (orderId) => {
+                await updateDoc(doc(db, ORDERS_COLLECTION, orderId), { status: 'Received from Tailor', updatedAt: serverTimestamp() });
+            };
+
+            const openShippingModal = (orderId) => {
+                setShippingOrderId(orderId);
+                setShippingForm({ sellingPrice: '', shippingCost: '', otherExpenses: '' });
+            };
+
+            const submitShipping = async () => {
+                if (!shippingOrderId) return;
+                const selling = parseFloat(shippingForm.sellingPrice);
+                if (isNaN(selling) || selling <= 0) { setOperationalError("Valid selling price required."); return; }
+
+                await updateDoc(doc(db, ORDERS_COLLECTION, shippingOrderId), {
+                    status: 'Order Shipped (Completed)',
+                    finalSellingPrice: selling,
+                    shippingCost: parseFloat(shippingForm.shippingCost) || 0,
+                    otherExpenses: parseFloat(shippingForm.otherExpenses) || 0,
+                    updatedAt: serverTimestamp()
+                });
+                setShippingOrderId(null);
+            };
+
+            // --- INVENTORY ACTIONS ---
+            const handleStockAdjustmentSubmit = async (e) => { e.preventDefault(); const item = inventoryItems.find(x => x.id === adjustmentItemId); if (!item) return; const amt = parseFloat(adjustmentAmount); if (!amt || amt <= 0) return; const docRef = doc(db, FABRICS_COLLECTION, item.id); const isAdd = adjustmentType === 'ADD'; if (item.type === 'fabric') { const newLen = isAdd ? item.currentLength + amt : item.currentLength - amt; if (!isAdd && newLen < 0) { setOperationalError("Cannot deduct more than available."); return; } await updateDoc(docRef, { currentLength: newLen, updatedAt: serverTimestamp() }); await addDoc(collection(docRef, 'history'), { type: isAdd ? 'ADJUST_ADD' : 'ADJUST_DEDUCT', amountUsed: amt, isAddition: isAdd, status: 'Manual Adjustment', orderNumber: 'MANUAL', usedByEmail: userEmail, usedAt: serverTimestamp() }); } else { const size = adjustmentSize; const currentQty = item.stockBreakdown?.[size] || 0; const newQty = isAdd ? currentQty + amt : currentQty - amt; if (!isAdd && newQty < 0) { setOperationalError("Cannot deduct more than available."); return; } const newBreakdown = { ...item.stockBreakdown, [size]: newQty }; await updateDoc(docRef, { stockBreakdown: newBreakdown, updatedAt: serverTimestamp() }); await addDoc(collection(docRef, 'history'), { type: isAdd ? 'OUTFIT_ADD' : 'OUTFIT_SOLD', amountUsed: amt, isAddition: isAdd, size: size, status: `Stock ${isAdd ? 'In' : 'Out'}`, orderNumber: 'MANUAL', usedByEmail: userEmail, usedAt: serverTimestamp() }); } setIsStockAdjusting(false); setAdjustmentAmount(''); };
+            const handleAddItem = async (e) => { e.preventDefault(); setIsUploading(true); try { let imgUrl = `https://placehold.co/150x150/${addItemType === 'fabric' ? '2e7d32' : '7c3aed'}/ffffff?text=${newItem.name.substring(0, 2).toUpperCase()}`; if (newImageFile) { const raw = await fileToBase64(newImageFile); imgUrl = raw; } const docData = { ...newItem, type: addItemType, imageUrl: imgUrl, updatedAt: serverTimestamp(), createdAt: serverTimestamp() }; if (addItemType === 'fabric') { docData.currentLength = parseFloat(newItem.totalLength); docData.lengthRequiredPerOutfit = parseFloat(newItem.lengthRequiredPerOutfit); docData.costPerMeter = parseFloat(newItem.costPerMeter); docData.totalLength = parseFloat(newItem.totalLength); docData.currentOrderStatus = 'None'; } await addDoc(collection(db, FABRICS_COLLECTION), docData); setNewItem({ name: '', websiteProductName: '', totalLength: '', unit: 'meters', lengthRequiredPerOutfit: '', costPerMeter: '', parentFabricId: '', stockBreakdown: { S: 0, M: 0, L: 0, XL: 0, XXL: 0 }, location: '' }); setNewImageFile(null); setActiveTab('inventory'); } catch (err) { setOperationalError(err.message); } setIsUploading(false); };
+            const openStockModal = (item, type) => { setAdjustmentItemId(item.id); setAdjustmentType(type); setAdjustmentAmount(''); setIsStockAdjusting(true); };
+            const openEditModal = (item) => { setEditForm({ id: item.id, name: item.name, websiteProductName: item.websiteProductName || '', location: item.location || '', costPerMeter: item.costPerMeter, lengthRequiredPerOutfit: item.lengthRequiredPerOutfit, currentLength: item.currentLength, unit: item.unit }); setEditImageFile(null); setEditingId(item.id); };
+            const handleEditSave = async () => { if (!editForm || !db) return; setIsUploading(true); try { const docRef = doc(db, FABRICS_COLLECTION, editForm.id); const updates = { ...editForm, updatedAt: serverTimestamp() }; if (editImageFile) { const raw = await fileToBase64(editImageFile); updates.imageUrl = raw; } await updateDoc(docRef, updates); setEditingId(null); } catch (e) { setOperationalError("Update Failed: " + e.message); } setIsUploading(false); };
+            const handleConfirmDeleteLog = async (fid, tid) => { await deleteDoc(doc(db, FABRICS_COLLECTION, fid, 'history', tid)); setDeleteLogConfirmationId(null); }
+            const getParentFabricInfo = (fabricId) => { if (!fabricId) return null; const parent = inventoryItems.find(i => i.id === fabricId); return parent ? { name: parent.name, potential: parent.potentialOutfits, id: parent.id } : null; }
+            const getOutfitTotal = (breakdown) => Object.values(breakdown || {}).reduce((a, b) => a + (parseInt(b) || 0), 0);
+
+            // --- RENDERERS ---
+            if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="spinner"></div></div>;
+
+            return (
+                <div className="min-h-screen pb-24 safe-area-bottom">
+
+                    {/* HEADER */}
+                    <div className="bg-white px-6 pt-12 pb-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+                        <div><p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Good Morning</p><h1 className="text-2xl font-extrabold text-brand">Poshakh Manager</h1></div>
+                        <div className="h-10 w-10 bg-brand-100 rounded-full flex items-center justify-center text-brand font-bold text-lg">{userEmail[0]}</div>
+                    </div>
+
+                    <div className="px-4 py-6 space-y-6">
+                        {operationalError && <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex justify-between items-center shadow-sm rounded-r-md"><span className="text-sm font-medium">{operationalError}</span><button onClick={() => setOperationalError(null)}><Icons.X className="w-5 h-5" /></button></div>}
+
+                        {/* --- HOME TAB --- */}
+                        {activeTab === 'home' && (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-brand text-white p-5 rounded-3xl shadow-soft flex flex-col justify-between h-40 relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-20"><Icons.Trend className="w-12 h-12" /></div><div><h3 className="text-3xl font-bold">₹{parseInt(financialMetrics.totalStockValue).toLocaleString()}</h3><p className="text-brand-100 text-xs font-medium mt-1">Total Stock Value</p></div></div>
+                                    <div className="bg-white p-5 rounded-3xl shadow-soft flex flex-col justify-between h-40"><div className="flex justify-between items-start"><div className="p-2 bg-green-50 text-brand rounded-full"><Icons.Box className="w-5 h-5" /></div></div><div><h3 className="text-2xl font-bold text-gray-900">{financialMetrics.totalItems}</h3><p className="text-gray-400 text-xs font-medium">Total Items</p></div></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 rounded-3xl shadow-soft"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Total Sold</p><h3 className="text-2xl font-bold text-gray-900">{financialMetrics.totalSold}</h3></div>
+                                    <div className="bg-white p-4 rounded-3xl shadow-soft">
+                                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">Daily Profit</p>
+                                        <h3 className="text-2xl font-bold text-green-600">₹{financialMetrics.dailyProfit}</h3>
+                                        <p className="text-[10px] text-gray-400 mt-1">Today</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white p-4 rounded-3xl shadow-soft grid grid-cols-3 gap-2 text-center divide-x divide-gray-100">
+                                    <div><p className="text-lg font-bold text-yellow-600">{financialMetrics.statusCounts.tailor}</p><p className="text-[10px] text-gray-400 uppercase">At Tailor</p></div>
+                                    <div><p className="text-lg font-bold text-blue-600">{financialMetrics.statusCounts.received}</p><p className="text-[10px] text-gray-400 uppercase">Received</p></div>
+                                    <div><p className="text-lg font-bold text-green-600">{financialMetrics.statusCounts.shipped}</p><p className="text-[10px] text-gray-400 uppercase">Shipped</p></div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* --- INVENTORY TAB (RESTORED FROM V17) --- */}
+                        {activeTab === 'inventory' && (
+                            <div className="space-y-4 fade-in">
+                                <div className="flex justify-between items-center mb-2"><h2 className="text-2xl font-bold text-gray-900">Inventory</h2><button onClick={() => setActiveTab('add')} className="text-sm bg-brand text-white px-4 py-2 rounded-full font-bold shadow-lg hover:bg-brand-800 flex items-center gap-1"><Icons.Plus className="w-4 h-4" /> Add Item</button></div>
+                                <div className="relative"><span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><Icons.Search className="w-5 h-5" /></span><input className="w-full pl-10 p-3 bg-white rounded-xl border-none shadow-sm text-sm" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                                <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-2">{['all', 'fabrics', 'outfits', 'low'].map(f => (<button key={f} onClick={() => setInventoryFilter(f)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap capitalize transition-colors ${inventoryFilter === f ? 'bg-gray-800 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-100'}`}>{f}</button>))}</div>
+                                <div className="space-y-4">
+                                    {inventoryList.map(item => {
+                                        const isFabric = item.type === 'fabric';
+                                        if (isFabric) {
+                                            const isLow = item.currentLength > 0 && item.currentLength < 5;
+                                            return (<div key={item.id} className="bg-white p-4 rounded-3xl shadow-card relative overflow-hidden"><div className="flex items-start gap-4 relative z-10"><div className="h-16 w-16 rounded-2xl bg-gray-100 flex-shrink-0 border border-gray-100 overflow-hidden"><img src={item.imageUrl} className="h-full w-full object-cover" onClick={() => setSelectedImageUrl(item.imageUrl)} /></div><div className="flex-1"><div className="flex justify-between items-start"><div><div className="flex items-center gap-2"><h4 className="font-bold text-gray-900 text-sm line-clamp-1">{item.name}</h4><span className="text-[10px] px-2 py-0.5 bg-brand-100 text-brand-800 rounded-full font-bold">Fabric</span></div><p className="text-[10px] text-gray-400 font-mono uppercase tracking-wide mb-1">{item.websiteProductName || 'RAW'}</p>{item.location && <div className="flex items-center text-[10px] text-gray-500 gap-1"><Icons.MapPin className="w-3 h-3 text-brand" /> {item.location}</div>}</div>{isLow && <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded">Low</span>}</div><div className="flex items-center justify-between mt-2"><span className="text-xl font-extrabold text-brand">{item.currentLength.toFixed(1)} <span className="text-xs font-medium text-gray-400">{item.unit}</span></span><div className="flex gap-2"><button onClick={() => openStockModal(item, 'ADD')} className="bg-green-100 text-green-700 h-8 w-8 rounded-full flex items-center justify-center hover:bg-green-200"><Icons.Plus className="w-4 h-4" /></button><button onClick={() => openStockModal(item, 'DEDUCT')} className="bg-red-100 text-red-700 h-8 w-8 rounded-full flex items-center justify-center hover:bg-red-200"><Icons.Minus className="w-4 h-4" /></button></div></div><div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500"><span>Potential: <strong>~{item.potentialOutfits} Outfits</strong></span><div className="flex gap-2"><button onClick={() => openEditModal(item)} className="text-gray-300 hover:text-brand"><Icons.Pencil className="w-4 h-4" /></button><button onClick={() => setHistoryItemId(historyItemId === item.id ? null : item.id)} className="text-gray-400 hover:text-gray-600"><Icons.Clock className="w-4 h-4" /></button></div></div></div></div>{historyItemId === item.id && (<div className="border-t pt-2 mt-2"><div className="flex justify-between items-center mb-2"><h5 className="text-xs font-bold text-gray-500 uppercase">Recent Activity</h5><button onClick={() => deleteDoc(doc(db, FABRICS_COLLECTION, item.id))} className="text-xs text-red-500 hover:underline">Delete Item</button></div><div className="max-h-40 overflow-y-auto no-scrollbar space-y-2">{transactionHistory.length === 0 ? <p className="text-xs text-gray-400 italic">No history.</p> : transactionHistory.map(tx => (<div key={tx.id} className="flex justify-between items-center text-xs bg-gray-50 p-2 rounded"><span>{tx.orderNumber} ({tx.type})</span><div className="flex items-center gap-2"><span className={tx.amountUsed > 0 ? 'text-red-500' : ''}>{tx.amountUsed > 0 ? `-${tx.amountUsed}` : '--'}</span><button onClick={() => setDeleteLogConfirmationId(tx.id)} className="text-gray-400 hover:text-red-500"><Icons.Trash2 className="w-3 h-3" /></button></div>{deleteLogConfirmationId === tx.id && (<div className="absolute right-0 bg-red-100 p-1 flex gap-2 rounded shadow-lg"><button onClick={() => handleConfirmDeleteLog(item.id, tx.id)} className="text-red-700 font-bold px-2">Confirm</button><button onClick={() => setDeleteLogConfirmationId(null)} className="text-gray-500">X</button></div>)}</div>))}</div></div>)}</div>);
+                                        } else {
+                                            const totalReady = getOutfitTotal(item.stockBreakdown);
+                                            const parent = getParentFabricInfo(item.parentFabricId);
+                                            return (<div key={item.id} className="bg-white p-4 rounded-3xl shadow-card border-l-4 border-outfit"><div className="flex items-start gap-4"><div className="h-16 w-16 rounded-2xl bg-gray-100 flex-shrink-0 overflow-hidden"><img src={item.imageUrl} className="h-full w-full object-cover" onClick={() => setSelectedImageUrl(item.imageUrl)} /></div><div className="flex-1"><div className="flex justify-between"><h4 className="font-bold text-gray-900 text-sm">{item.name}</h4><span className="text-[10px] px-2 py-0.5 bg-outfit-100 text-outfit-600 rounded-full font-bold">Outfit</span></div><p className="text-[10px] text-gray-400 font-mono mb-1">{item.websiteProductName || 'SKU-N/A'}</p>{item.location && <div className="flex items-center text-[10px] text-gray-500 gap-1 mb-2"><Icons.MapPin className="w-3 h-3 text-outfit-600" /> {item.location}</div>}<div className="flex items-center justify-between"><div><span className="text-2xl font-extrabold text-outfit-600">{totalReady}</span><span className="text-xs text-gray-400 ml-1">Ready</span></div><div className="flex gap-2"><button onClick={() => openStockModal(item, 'ADD')} className="bg-outfit-100 text-outfit-600 h-8 w-8 rounded-full flex items-center justify-center hover:bg-outfit-200"><Icons.Plus className="w-4 h-4" /></button><button onClick={() => openStockModal(item, 'DEDUCT')} className="bg-red-100 text-red-700 h-8 w-8 rounded-full flex items-center justify-center hover:bg-red-200"><Icons.Minus className="w-4 h-4" /></button></div></div><div className="mt-3 bg-gray-50 p-2 rounded-lg text-xs flex justify-between items-center"><div className="text-gray-600 font-mono">{Object.entries(item.stockBreakdown || {}).filter(([k, v]) => v > 0).map(([k, v]) => <span key={k} className="mr-2">{k}:{v}</span>)}{totalReady === 0 && <span className="text-gray-400">No Stock</span>}</div>{parent && <div className="text-[10px] text-green-600 flex items-center gap-1 bg-green-50 px-2 py-1 rounded"><Icons.Link className="w-3 h-3" /> +{parent.potential} Potential</div>}<button onClick={() => openEditModal(item)} className="text-gray-300 hover:text-brand"><Icons.Pencil className="w-4 h-4" /></button></div></div></div></div>);
+                                        }
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- TAB: ADD ITEM (RESTORED FROM V17) --- */}
+                        {activeTab === 'add' && (
+                            <div className="bg-white rounded-3xl shadow-soft p-6 fade-in">
+                                <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Item</h2>
+                                <div className="flex bg-gray-100 p-1 rounded-xl mb-6"><button onClick={() => setAddItemType('fabric')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addItemType === 'fabric' ? 'bg-white shadow text-brand' : 'text-gray-500'}`}>Fabric</button><button onClick={() => setAddItemType('outfit')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addItemType === 'outfit' ? 'bg-white shadow text-outfit-600' : 'text-gray-500'}`}>Outfit</button></div>
+                                <form onSubmit={handleAddItem} className="space-y-4">
+                                    <input required className="w-full p-3 bg-gray-50 rounded-xl border-none" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} placeholder={addItemType === 'fabric' ? "Fabric Name" : "Outfit Name"} />
+                                    <div className="flex items-center border bg-gray-50 rounded-xl px-3"><Icons.MapPin className="w-5 h-5 text-gray-400" /><input className="w-full p-3 bg-transparent border-none outline-none" value={newItem.location} onChange={e => setNewItem({ ...newItem, location: e.target.value })} placeholder="Storage Location (e.g. Shelf A)" /></div>
+                                    {addItemType === 'fabric' ? (<><input className="w-full p-3 bg-gray-50 rounded-xl border-none" value={newItem.websiteProductName} onChange={e => setNewItem({ ...newItem, websiteProductName: e.target.value })} placeholder="Website Product Name" /><div className="flex gap-2"><input required type="number" step="0.1" className="w-2/3 p-3 bg-gray-50 rounded-xl border-none" value={newItem.totalLength} onChange={e => setNewItem({ ...newItem, totalLength: e.target.value })} placeholder="Total Length" /><select className="w-1/3 p-3 bg-gray-50 rounded-xl border-none" value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })}><option>meters</option><option>yards</option></select></div><div className="flex gap-2"><input required type="number" className="w-1/2 p-3 bg-gray-50 rounded-xl border-none" value={newItem.costPerMeter} onChange={e => setNewItem({ ...newItem, costPerMeter: e.target.value })} placeholder="Cost/Meter" /><input required type="number" step="0.1" className="w-1/2 p-3 bg-gray-50 rounded-xl border-none" value={newItem.lengthRequiredPerOutfit} onChange={e => setNewItem({ ...newItem, lengthRequiredPerOutfit: e.target.value })} placeholder="Req/Outfit" /></div></>) : (<><input className="w-full p-3 bg-gray-50 rounded-xl border-none" value={newItem.websiteProductName} onChange={e => setNewItem({ ...newItem, websiteProductName: e.target.value })} placeholder="SKU / Code" /><div><label className="text-xs font-bold text-gray-500 uppercase ml-1">Source Fabric</label><select className="w-full p-3 bg-gray-50 rounded-xl border-none mt-1" value={newItem.parentFabricId} onChange={e => setNewItem({ ...newItem, parentFabricId: e.target.value })}><option value="">-- None --</option>{fabricOptions.map(f => <option key={f.id} value={f.id}>{f.name} ({f.currentLength}{f.unit})</option>)}</select></div><div className="bg-gray-50 p-3 rounded-xl"><label className="text-xs font-bold text-gray-500 uppercase">Initial Stock</label><div className="grid grid-cols-5 gap-2 mt-2">{['S', 'M', 'L', 'XL', 'XXL'].map(size => (<div key={size} className="text-center"><span className="text-[10px] text-gray-400 font-bold block mb-1">{size}</span><input type="number" className="w-full p-1 text-center bg-white rounded border border-gray-200" value={newItem.stockBreakdown[size]} onChange={e => setNewItem({ ...newItem, stockBreakdown: { ...newItem.stockBreakdown, [size]: parseInt(e.target.value) || 0 } })} /></div>))}</div></div></>)}
+                                    <div className="flex gap-3 pt-2"><div onClick={() => cameraInputRef.current.click()} className="flex-1 h-20 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer"><Icons.Camera className="w-6 h-6" /><span className="text-[10px] font-bold">Camera</span></div><div onClick={() => galleryInputRef.current.click()} className="flex-1 h-20 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer"><Icons.Image className="w-6 h-6" /><span className="text-[10px] font-bold">Gallery</span></div></div><input type="file" hidden ref={cameraInputRef} capture="environment" accept="image/*" onChange={e => setNewImageFile(e.target.files[0])} /><input type="file" hidden ref={galleryInputRef} accept="image/*" onChange={e => setNewImageFile(e.target.files[0])} />{newImageFile && <p className="text-xs text-brand font-bold text-center">Image Selected</p>}
+                                    <button disabled={isUploading} className={`w-full text-white font-bold py-4 rounded-xl shadow-lg mt-4 ${addItemType === 'fabric' ? 'bg-brand' : 'bg-outfit-600'}`}>{isUploading ? 'Uploading...' : 'Save Item'}</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* --- ORDERS TAB --- */}
+                        {activeTab === 'orders' && (
+                            <div className="space-y-6 fade-in">
+                                {/* CARD 1: PRODUCTION FORM */}
+                                <div className="bg-white p-5 rounded-3xl shadow-soft border-l-4 border-brand">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Icons.Scissors className="w-5 h-5 text-brand" /> Production Queue</h3>
+
+                                    <form className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-xs font-bold text-gray-500 uppercase">Order #</label><input className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={orderForm.orderNumber} onChange={e => setOrderForm({ ...orderForm, orderNumber: e.target.value })} placeholder="101" /></div>
+                                            <div><label className="text-xs font-bold text-gray-500 uppercase">Select Fabric</label><select className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={orderForm.fabricId} onChange={e => setOrderForm({ ...orderForm, fabricId: e.target.value })}><option value="">-- Choose --</option>{fabricOptions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="col-span-1"><label className="text-xs font-bold text-gray-500 uppercase">Cut Amt</label><input type="number" step="0.1" className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={orderForm.lengthToCut} onChange={e => setOrderForm({ ...orderForm, lengthToCut: e.target.value })} placeholder="0.0" /></div>
+                                            <div className="col-span-1"><label className="text-xs font-bold text-gray-500 uppercase">Stitching ₹</label><input type="number" className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={orderForm.stitchingCost} onChange={e => setOrderForm({ ...orderForm, stitchingCost: e.target.value })} placeholder="0.00" /></div>
+                                            <div className="col-span-1"><label className="text-xs font-bold text-gray-500 uppercase">Acq. Cost ₹</label><input type="number" className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={orderForm.acquisitionCost} onChange={e => setOrderForm({ ...orderForm, acquisitionCost: e.target.value })} placeholder="0.00" /></div>
+                                        </div>
+
+                                        <div><label className="text-xs font-bold text-gray-500 uppercase">Target Outfit</label><input list="outfit-suggestions" className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={orderForm.outfitName} onChange={e => setOrderForm({ ...orderForm, outfitName: e.target.value })} placeholder="e.g. Mirae" /><datalist id="outfit-suggestions">{outfitOptions.map(o => <option key={o.id} value={o.name} />)}</datalist></div>
+
+                                        {/* SIZE SELECTION */}
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Target Size</label>
+                                            <div className="flex bg-gray-50 p-1 rounded-xl gap-1 overflow-x-auto no-scrollbar">
+                                                {['S', 'M', 'L', 'XL', 'XXL', 'Custom'].map(s => (
+                                                    <button key={s} type="button" onClick={() => setOrderForm({ ...orderForm, size: s })}
+                                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${orderForm.size === s ? 'bg-brand text-white shadow' : 'text-gray-500 hover:bg-gray-200'}`}>
+                                                        {s}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <button onClick={handleAddToQueue} className="w-full bg-gray-800 text-white py-2 rounded-xl font-bold text-sm hover:bg-gray-700">+ Add to Queue</button>
+                                    </form>
+
+                                    {/* QUEUE LIST */}
+                                    {productionQueue.length > 0 && (
+                                        <div className="mt-4 border-t pt-4">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Pending Batch ({productionQueue.length})</h4>
+                                            <div className="space-y-2 mb-4">
+                                                {productionQueue.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded-lg">
+                                                        <div>
+                                                            <span className="font-bold text-brand">{item.fabricName}</span>
+                                                            <span className="text-xs text-gray-500 ml-2">Cut: {item.cutAmount} {item.unit}</span>
+                                                            <p className="text-[10px] text-gray-400">#{item.orderNumber} -> {item.outfitName} ({item.size})</p>
+                                                        </div>
+                                                        <button onClick={() => removeQueueItem(idx)} className="text-red-400 hover:text-red-600"><Icons.X className="w-4 h-4" /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button onClick={handleBatchSubmit} disabled={isUploading} className="w-full bg-brand text-white py-3 rounded-xl font-bold text-sm shadow-md">
+                                                {isUploading ? 'Processing...' : 'Submit Batch to Production'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* ORDER LIST */}
+                                <div>
+                                    <div className="flex justify-between items-end mb-3"><h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Icons.Clipboard className="w-5 h-5 text-accent" /> Order History</h3><div className="flex gap-2"><select className="text-xs bg-white border border-gray-200 rounded-lg p-1 text-gray-600" value={orderSort} onChange={e => setOrderSort(e.target.value)}><option value="date_desc">Newest</option><option value="date_asc">Oldest</option></select><select className="text-xs bg-white border border-gray-200 rounded-lg p-1 text-gray-600" value={orderFilterStatus} onChange={e => setOrderFilterStatus(e.target.value)}><option value="active">Active Only</option><option value="completed">Completed/Cancelled</option></select></div></div>
+                                    <div className="space-y-3">
+                                        {filteredOrders.map(order => (
+                                            <div key={order.id} className={`bg-white p-4 rounded-2xl shadow-card flex flex-col gap-3 relative ${order.status === 'Cancelled' ? 'opacity-60 grayscale' : ''}`}>
+                                                {order.status !== 'Cancelled' && order.status !== 'Order Shipped (Completed)' && (<button onClick={() => handleCancelOrder(order)} className="absolute top-3 right-3 text-gray-300 hover:text-red-500"><Icons.X className="w-5 h-5" /></button>)}
+
+                                                {/* DELETE BUTTON FOR COMPLETED/CANCELLED */}
+                                                {(order.status === 'Cancelled' || order.status === 'Order Shipped (Completed)') && (
+                                                    <button onClick={() => setDeleteOrderTargetId(order.id)} className="absolute bottom-3 right-3 text-gray-300 hover:text-red-500 z-10"><Icons.Trash2 className="w-5 h-5" /></button>
+                                                )}
+
+                                                <div className="flex gap-3"><img src={order.imageUrl} className="w-14 h-14 rounded-xl bg-gray-100 object-cover" /><div><div className="flex items-center gap-2"><span className="font-mono text-brand font-bold text-sm">#{order.orderNumber}</span><span className={`text-[10px] font-bold px-2 py-0.5 rounded ${order.status === 'Sent to Tailor' ? 'bg-yellow-100 text-yellow-700' : order.status.includes('Shipped') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{order.status}</span></div><h4 className="font-bold text-gray-800 text-sm">{order.outfitName || 'Unspecified'} <span className="text-xs bg-gray-100 px-1 rounded ml-1 text-gray-600">Size {order.size}</span></h4><p className="text-xs text-gray-500">Stitch Cost: ₹{order.stitchingCost || 0}</p></div></div>
+                                                {/* Status Actions */}
+                                                {order.status !== 'Cancelled' && (
+                                                    <div className="bg-gray-50 p-2 rounded-xl flex justify-between items-center mt-1">
+                                                        {order.status === 'Sent to Tailor' ? (<button onClick={() => handleQuickReceive(order.id)} className="text-xs font-bold text-brand hover:underline">Mark Received</button>)
+                                                            : order.status === 'Received from Tailor' ? (<button onClick={() => openShippingModal(order.id)} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><Icons.Truck className="w-3 h-3" /> Ship It</button>)
+                                                                : (<span className="text-[10px] text-green-600 font-bold">Done</span>)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- FINANCIALS TAB --- */}
+                        {activeTab === 'financials' && (
+                            <div className="space-y-6 fade-in">
+                                <h2 className="text-xl font-bold text-gray-900">Financial Insights</h2>
+                                <div className="bg-gray-900 text-white p-6 rounded-3xl shadow-xl">
+                                    <p className="text-gray-400 text-sm font-medium mb-1">Total Revenue (Realized)</p>
+                                    <h3 className="text-3xl font-extrabold mb-4">₹{parseInt(financialMetrics.totalRevenue).toLocaleString()}</h3>
+                                    <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-4">
+                                        <div><p className="text-gray-400 text-xs">Total Costs</p><p className="text-lg font-bold">₹{parseInt(financialMetrics.breakdown.fabric + financialMetrics.breakdown.stitch + financialMetrics.breakdown.ops).toLocaleString()}</p></div>
+                                        <div><p className="text-gray-400 text-xs">Net Profit</p><p className="text-lg font-bold text-green-400">₹{parseInt(financialMetrics.totalProfit).toLocaleString()}</p></div>
+                                    </div>
+                                </div>
+
+                                {/* Profit Breakdown Visualization */}
+                                <div className="bg-white p-5 rounded-3xl shadow-soft">
+                                    <h4 className="font-bold text-gray-900 mb-4">Cost vs Profit Breakdown</h4>
+                                    <div className="space-y-3">
+                                        <div className="relative pt-1"><div className="flex mb-2 items-center justify-between"><div><span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-brand-600 bg-brand-200">Fabric Cost</span></div><div className="text-right"><span className="text-xs font-semibold inline-block text-brand-600">₹{financialMetrics.breakdown.fabric.toFixed(0)}</span></div></div><div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-brand-200"><div style={{ width: `${(financialMetrics.breakdown.fabric / financialMetrics.totalRevenue) * 100}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-brand-600"></div></div></div>
+                                        <div className="relative pt-1"><div className="flex mb-2 items-center justify-between"><div><span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">Stitching</span></div><div className="text-right"><span className="text-xs font-semibold inline-block text-blue-600">₹{financialMetrics.breakdown.stitch.toFixed(0)}</span></div></div><div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200"><div style={{ width: `${(financialMetrics.breakdown.stitch / financialMetrics.totalRevenue) * 100}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600"></div></div></div>
+                                        <div className="relative pt-1"><div className="flex mb-2 items-center justify-between"><div><span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-orange-600 bg-orange-200">Ops/Ship/Acq</span></div><div className="text-right"><span className="text-xs font-semibold inline-block text-orange-600">₹{financialMetrics.breakdown.ops.toFixed(0)}</span></div></div><div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-orange-200"><div style={{ width: `${(financialMetrics.breakdown.ops / financialMetrics.totalRevenue) * 100}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-600"></div></div></div>
+                                        <div className="relative pt-1"><div className="flex mb-2 items-center justify-between"><div><span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-600 bg-green-100">Net Profit</span></div><div className="text-right"><span className="text-xs font-semibold inline-block text-green-600">₹{financialMetrics.breakdown.profit.toFixed(0)}</span></div></div><div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-green-100"><div style={{ width: `${(financialMetrics.breakdown.profit / financialMetrics.totalRevenue) * 100}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"></div></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+
+                    {/* BOTTOM NAV */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-between items-center z-50 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                        {[{ id: 'home', icon: Icons.Home }, { id: 'inventory', icon: Icons.Box }, { id: 'add', icon: Icons.Plus }, { id: 'orders', icon: Icons.Clipboard }, { id: 'financials', icon: Icons.Trend }].map((tab) => {
+                            if (tab.id === 'add') return <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="w-12 h-12 rounded-full flex items-center justify-center bg-brand text-white shadow-lg -mt-6 border-4 border-gray-50"><tab.icon className="w-6 h-6" /></button>
+                            return <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`p-2 rounded-xl transition-colors ${activeTab === tab.id ? 'text-brand bg-brand-50' : 'text-gray-400'}`}><tab.icon className="w-6 h-6" /></button>
+                        })}
+                    </div>
+
+                    {/* ADJUSTMENT MODAL */}
+                    {isStockAdjusting && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-enter">
+                            <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+                                <h3 className="text-lg font-bold mb-4 text-center">{adjustmentType === 'ADD' ? 'Add Stock' : 'Deduct Stock'}</h3>
+                                {inventoryItems.find(i => i.id === adjustmentItemId)?.type === 'outfit' && (<div className="flex justify-center gap-2 mb-4">{['S', 'M', 'L', 'XL', 'XXL'].map(s => (<button key={s} onClick={() => setAdjustmentSize(s)} className={`w-10 h-10 rounded-full font-bold text-sm ${adjustmentSize === s ? 'bg-outfit-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{s}</button>))}</div>)}
+                                <div className="mb-4"><input type="number" step="0.1" className="w-full p-4 border-2 border-brand-100 rounded-2xl text-2xl text-center font-bold focus:border-brand outline-none" autoFocus value={adjustmentAmount} onChange={e => setAdjustmentAmount(e.target.value)} placeholder="0.0" /></div>
+                                <div className="flex gap-3"><button onClick={handleStockAdjustmentSubmit} className="flex-1 bg-brand text-white py-3 rounded-xl font-bold shadow-lg shadow-brand/30">Confirm</button><button onClick={() => setIsStockAdjusting(false)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold">Cancel</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* EDIT MODAL */}
+                    {editingId && editForm && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-enter overflow-y-auto">
+                            <div className="bg-white p-6 rounded-3xl w-full max-w-lg shadow-2xl relative my-10">
+                                <button onClick={() => setEditingId(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icons.X className="w-6 h-6" /></button>
+                                <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Details</h3>
+                                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 no-scrollbar">
+                                    <div><label className="text-xs font-bold text-gray-500 uppercase">Internal Name</label><input className="w-full p-2 bg-gray-50 rounded-xl mt-1 border border-transparent focus:bg-white focus:border-brand" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
+                                    <div><label className="text-xs font-bold text-gray-500 uppercase">Location</label><input className="w-full p-2 bg-gray-50 rounded-xl mt-1 border border-transparent focus:bg-white focus:border-brand" value={editForm.location} onChange={e => setEditForm({ ...editForm, location: e.target.value })} /></div>
+                                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100"><label className="text-xs font-bold text-blue-800 uppercase flex items-center gap-1"><Icons.Box className="w-3 h-3" /> Stock Correction</label><div className="flex gap-2 mt-1"><input type="number" step="0.1" className="w-2/3 p-2 bg-white rounded-lg border border-blue-200" value={editForm.currentLength} onChange={e => setEditForm({ ...editForm, currentLength: e.target.value })} /><span className="p-2 text-blue-800 font-bold self-center">{editForm.unit}</span></div></div>
+                                    <div><label className="text-xs font-bold text-gray-500 uppercase block mb-2">Update Image</label><div className="flex gap-2"><div onClick={() => editCameraRef.current.click()} className="flex-1 h-16 bg-gray-50 rounded-xl border-dashed border-2 border-gray-300 flex items-center justify-center text-gray-400 cursor-pointer"><Icons.Camera className="w-5 h-5" /></div><div onClick={() => editGalleryRef.current.click()} className="flex-1 h-16 bg-gray-50 rounded-xl border-dashed border-2 border-gray-300 flex items-center justify-center text-gray-400 cursor-pointer"><Icons.Image className="w-5 h-5" /></div></div><input type="file" hidden ref={editCameraRef} capture="environment" accept="image/*" onChange={e => setEditImageFile(e.target.files[0])} /><input type="file" hidden ref={editGalleryRef} accept="image/*" onChange={e => setEditImageFile(e.target.files[0])} />{editImageFile && <p className="text-xs text-green-600 font-bold mt-1 text-center">New Image Selected</p>}</div>
+                                </div>
+                                <div className="mt-4 flex gap-3"><button onClick={handleEditSave} disabled={isUploading} className="flex-1 bg-brand text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2">{isUploading ? 'Saving...' : <><Icons.Save className="w-5 h-5" /> Save Changes</>}</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DELETE CONFIRMATION MODAL */}
+                    {deleteOrderTargetId && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-enter">
+                            <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+                                <h3 className="text-lg font-bold mb-4 text-red-600 flex items-center gap-2"><Icons.Trash2 className="w-5 h-5" /> Delete Record?</h3>
+                                <p className="text-sm text-gray-600 mb-4">Enter admin password to permanently delete this order history.</p>
+                                <input type="password" className="w-full p-3 border rounded-xl mb-4" placeholder="Password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} autoFocus />
+                                <div className="flex gap-3">
+                                    <button onClick={handleDeleteOrder} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold">Delete</button>
+                                    <button onClick={() => { setDeleteOrderTargetId(null); setDeletePassword('') }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SHIPPING MODAL */}
+                    {shippingOrderId && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-enter">
+                            <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+                                <h3 className="text-lg font-bold mb-4 text-gray-900">Complete Shipping</h3>
+                                <div className="space-y-3">
+                                    <div><label className="text-xs font-bold text-gray-500">Final Selling Price (₹)</label><input type="number" className="w-full p-2 border rounded-xl mt-1" value={shippingForm.sellingPrice} onChange={e => setShippingForm({ ...shippingForm, sellingPrice: e.target.value })} autoFocus /></div>
+                                    <div><label className="text-xs font-bold text-gray-500">Shipping Cost (₹)</label><input type="number" className="w-full p-2 border rounded-xl mt-1" value={shippingForm.shippingCost} onChange={e => setShippingForm({ ...shippingForm, shippingCost: e.target.value })} /></div>
+                                    <div><label className="text-xs font-bold text-gray-500">Other Expenses (₹)</label><input type="number" className="w-full p-2 border rounded-xl mt-1" value={shippingForm.otherExpenses} onChange={e => setShippingForm({ ...shippingForm, otherExpenses: e.target.value })} /></div>
+                                </div>
+                                <div className="flex gap-3 mt-4">
+                                    <button onClick={submitShipping} className="flex-1 bg-brand text-white py-3 rounded-xl font-bold">Confirm Ship</button>
+                                    <button onClick={() => setShippingOrderId(null)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* IMAGE MODAL */}
+                    {selectedImageUrl && (
+                        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm modal-enter" onClick={() => setSelectedImageUrl(null)}>
+                            <img src={selectedImageUrl} className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl" />
+                            <button className="absolute top-6 right-6 text-white p-3 bg-white/20 rounded-full"><Icons.X className="w-6 h-6" /></button>
+                        </div>
+                    )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
