@@ -266,8 +266,8 @@
             const [financialViewMode, setFinancialViewMode] = useState('all'); // 'all' or 'month'
 
             // Customer Edit State
-            // const [isEditingCustomer, setIsEditingCustomer] = useState(false); // Removed as customer DB is gone
-            // const [tempCustomerData, setTempCustomerData] = useState({});
+            const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+            const [tempCustomerData, setTempCustomerData] = useState({});
 
             // Order Edit State
             const [isEditingOrder, setIsEditingOrder] = useState(false);
@@ -641,9 +641,11 @@
                         const key = o.customerName.toLowerCase().trim();
                         const existing = uniqueCustomers.get(key) || {
                             name: o.customerName,
-                            phone: '',
-                            address: '',
-                            email: '',
+                            phone: o.phone || '',
+                            address: o.address || '',
+                            email: o.email || '',
+                            city: o.city || '',
+                            state: o.state || '',
                             source: 'Order History',
                             customFields: o.importedData || {}
                         };
@@ -763,6 +765,62 @@
                 setIsUploading(false);
             };
 
+            // --- CUSTOMER EDITING HANDLERS ---
+            const startEditingCustomer = () => {
+                // Initialize temp data with current derived customer info
+                setTempCustomerData({
+                    name: viewCustomer.name || '',
+                    phone: viewCustomer.phone || '',
+                    email: viewCustomer.email || '',
+                    address: viewCustomer.address || '',
+                    city: viewCustomer.city || '',
+                    state: viewCustomer.state || ''
+                });
+                setIsEditingCustomer(true);
+            };
+
+            const saveCustomerEdit = async () => {
+                if (!viewCustomer?.name) { setOperationalError("Customer name is missing."); return; }
+                setIsUploading(true);
+
+                try {
+                    // 1. Find all orders associated with this customer name
+                    const q = query(collection(db, ORDERS_COLLECTION), where("customerName", "==", viewCustomer.name));
+                    const matchingOrdersSnap = await getDocs(q);
+
+                    if (matchingOrdersSnap.empty) {
+                        setOperationalError("No matching orders found to update customer details.");
+                        setIsUploading(false);
+                        return;
+                    }
+
+                    // 2. Prepare updates for all matching orders
+                    const updates = {
+                        phone: tempCustomerData.phone || '',
+                        email: tempCustomerData.email || '',
+                        address: tempCustomerData.address || '',
+                        city: tempCustomerData.city || '',
+                        state: tempCustomerData.state || '',
+                        updatedAt: serverTimestamp()
+                    };
+
+                    const updatePromises = matchingOrdersSnap.docs.map(docSnap => {
+                        return updateDoc(docSnap.ref, updates);
+                    });
+
+                    await Promise.all(updatePromises);
+
+                    // 3. Update the transient viewCustomer object for instant feedback
+                    setViewCustomer({ ...viewCustomer, ...updates });
+                    setIsEditingCustomer(false);
+                    setOperationalError(`Customer details updated across ${matchingOrdersSnap.docs.length} orders!`);
+
+                } catch (e) {
+                    setOperationalError("Update failed: " + e.message);
+                }
+                setIsUploading(false);
+            };
+
             // --- ORDER EDITING HANDLERS ---
             const startEditingOrder = () => {
                 setTempOrderData({
@@ -820,8 +878,17 @@
                     const { orderNumber, customerName, outfitName, size, fabricId, status, sellingPrice, deductStock, cutAmount, notes, phone, address, discount, source, acquisitionCost, paymentMethod, city, state, codCharge, shippingCost, codRemittanceDate } = legacyForm;
                     if (!orderNumber || !customerName) throw new Error("Order # and Customer Name are required");
 
+                    // --- NEW LOGIC: Outfit Validation and Sold Increment ---
+                    let linkedOutfit = null;
+                    if (outfitName) {
+                        linkedOutfit = inventoryItems.find(i => i.name.toLowerCase() === outfitName.toLowerCase() && i.type === 'outfit');
+                        if (!linkedOutfit) {
+                            throw new Error(`Outfit '${outfitName}' must be an existing outfit in Inventory.`);
+                        }
+                    }
+
                     const orderData = {
-                        orderNumber, customerName, outfitName, size, status, notes, phone, address, discount, source,
+                        orderNumber, customerName, outfitName: linkedOutfit ? linkedOutfit.name : outfitName, size, status, notes, phone, address, discount, source,
                         acquisitionCost: parseFloat(acquisitionCost) || 0,
                         paymentMethod: paymentMethod || 'Prepaid',
                         city: city || '',
@@ -845,12 +912,35 @@
                             }
                         }
                     } else {
-                        const linkedOutfit = inventoryItems.find(i => i.type === 'outfit' && i.name === outfitName);
+                        // If no fabric linked, use outfit image if found
                         orderData.imageUrl = linkedOutfit ? linkedOutfit.imageUrl : `https://placehold.co/150x150/e2e8f0/64748b?text=${orderNumber}`;
                     }
+
                     if (status === 'Order Shipped (Completed)') {
                         const finalPrice = parseFloat(sellingPrice);
                         if (finalPrice > 0) orderData.finalSellingPrice = finalPrice;
+
+                        // Increment sold count for the outfit if it was found
+                        if (linkedOutfit) {
+                            const outfitRef = doc(db, FABRICS_COLLECTION, linkedOutfit.id);
+                            const soldQty = 1; // Assuming 1 unit sold per manual log entry
+
+                            await updateDoc(outfitRef, {
+                                manualSoldCount: increment(soldQty),
+                                updatedAt: serverTimestamp()
+                            });
+
+                            await addDoc(collection(outfitRef, 'history'), {
+                                type: 'OUTFIT_SOLD_MANUAL',
+                                amountUsed: soldQty,
+                                size: size,
+                                status: 'Legacy Sold',
+                                orderNumber: orderNumber,
+                                usedByEmail: userProfile?.name,
+                                usedAt: serverTimestamp()
+                            });
+                        }
+
                     }
 
                     if (!orderData.finalSellingPrice && sellingPrice) orderData.finalSellingPrice = parseFloat(sellingPrice);
@@ -977,6 +1067,8 @@
                                     city: row[headerMap['Address City']] || '',
                                     state: row[headerMap['Address State']] || '',
                                     address: [row[headerMap['Address Line 1']], row[headerMap['Address Line 2']]].filter(Boolean).join(', '),
+                                    email: row[headerMap['Customer Email']] || '',
+                                    phone: '', // Phone is usually not in sheet data, or we prioritize manual entry/most recent order
 
                                     dateString: orderDate,
                                     createdAt: serverTimestamp(),
@@ -1551,7 +1643,7 @@
                     )}
 
                     {/* CUSTOMER DETAIL MODAL */}
-                    {viewCustomer && (<div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center modal-enter backdrop-blur-sm"><div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl h-[90vh] sm:h-[80vh] overflow-hidden flex flex-col shadow-2xl"><div className="bg-gray-50 p-6 border-b border-gray-100 relative"><button onClick={() => setViewCustomer(null)} className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-sm text-gray-400 hover:text-gray-900 transition-colors"><Icons.X className="w-5 h-5" /></button><div className="flex items-center gap-4"><div className="h-16 w-16 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-bold shadow-lg border-4 border-white">{viewCustomer.name.substring(0, 2).toUpperCase()}</div><div><h3 className="font-bold text-xl text-gray-900 leading-tight">{viewCustomer.name}</h3><p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Customer Profile</p></div></div></div><div className="overflow-y-auto p-6 space-y-6 no-scrollbar flex-1 bg-white">{customerViewInsights && (<div className="grid grid-cols-3 gap-3"><div className="bg-blue-50 p-3 rounded-2xl border border-blue-100 text-center"><p className="text-2xl font-extrabold text-blue-600">{customerViewInsights.totalItems}</p><p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Orders</p></div><div className="bg-green-50 p-3 rounded-2xl border border-green-100 text-center"><p className="text-2xl font-extrabold text-green-600">{(customerViewInsights.totalSpent / 1000).toFixed(1)}k</p><p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Spent</p></div><div className="bg-orange-50 p-3 rounded-2xl border border-orange-100 text-center"><p className="text-2xl font-extrabold text-orange-600">{customerViewInsights.totalItems > 0 ? (customerViewInsights.totalSpent / customerViewInsights.totalItems).toFixed(0) : 0}</p><p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Avg Val</p></div></div>)}<div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-3 relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-5"><Icons.User className="w-24 h-24" /></div><div className="flex justify-between items-center mb-2"><h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Information</h4></div><div className="flex items-center gap-3 text-gray-700"><div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400"><span className="text-xs">📞</span></div><span className="font-medium text-sm">{viewCustomer.phone || 'No Phone'}</span></div><div className="flex items-center gap-3 text-gray-700"><div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400"><span className="text-xs font-bold">@</span></div><span className="font-medium text-sm">{viewCustomer.email || 'No Email'}</span></div><div className="flex items-start gap-3 text-gray-700"><div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400 flex-shrink-0"><Icons.MapPin className="w-4 h-4" /></div><div class="flex-1"><span className="font-medium text-sm leading-snug pt-1">{viewCustomer.address || 'No Address'}{viewCustomer.city ? `, ${viewCustomer.city}` : ''}{viewCustomer.state ? `, ${viewCustomer.state}` : ''}</span></div></div></div>{viewCustomer.customFields && Object.keys(viewCustomer.customFields).length > 0 && (<div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3 flex items-center gap-2"><Icons.Database className="w-4 h-4 text-gray-400" /> Imported Data</h4><div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 text-xs">{Object.entries(viewCustomer.customFields).filter(([_, val]) => val && val !== '0' && val !== '0.00').map(([key, val]) => (<div key={key} className="flex justify-between p-3 hover:bg-gray-50"><span className="text-gray-500 font-medium">{key}</span><span className="text-gray-900 font-bold text-right max-w-[60%] truncate">{val}</span></div>))}</div></div>)}{customerViewInsights && (<div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3 flex items-center gap-2"><Icons.Clipboard className="w-4 h-4 text-gray-400" /> Order History</h4><div className="space-y-3">{customerViewInsights.history.map(hist => (<div key={hist.id} className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setViewCustomer(null); setViewOrder(hist); }}><div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 border border-gray-200"><img src={hist.imageUrl} className="w-full h-full object-cover" /></div><div className="flex-1 min-w-0"><h5 className="font-bold text-gray-900 text-sm truncate">{hist.outfitName}</h5><p className="text-xs text-gray-500">#{hist.orderNumber} • {getSafeDate(hist.createdAt)}</p></div><div className="text-right"><p className="font-bold text-gray-900 text-sm">₹{cleanNumber(hist.finalSellingPrice) || cleanNumber(hist.orderTotal) || '-'}</p><span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${hist.status.includes('Shipped') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{hist.status === 'Order Shipped (Completed)' ? 'Shipped' : 'Active'}</span></div></div>))}{customerViewInsights.history.length === 0 && <p className="text-center text-gray-400 py-4 italic text-sm">No orders recorded yet.</p>}</div></div>)}</div></div></div>)}
+                    {viewCustomer && (<div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center modal-enter backdrop-blur-sm"><div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl h-[90vh] sm:h-[80vh] overflow-hidden flex flex-col shadow-2xl"><div className="bg-gray-50 p-6 border-b border-gray-100 relative"><button onClick={() => setViewCustomer(null)} className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-sm text-gray-400 hover:text-gray-900 transition-colors"><Icons.X className="w-5 h-5" /></button><div className="flex items-center gap-4"><div className="h-16 w-16 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-bold shadow-lg border-4 border-white">{viewCustomer.name.substring(0, 2).toUpperCase()}</div><div>{isEditingCustomer ? (<input className="font-bold text-xl text-gray-900 leading-tight bg-white border border-gray-200 rounded px-2 py-1 w-full mb-1" value={tempCustomerData.name} onChange={e => setTempCustomerData({ ...tempCustomerData, name: e.target.value })} placeholder="Customer Name" />) : (<h3 className="font-bold text-xl text-gray-900 leading-tight">{viewCustomer.name}</h3>)}<p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">Customer Profile</p></div></div></div><div className="overflow-y-auto p-6 space-y-6 no-scrollbar flex-1 bg-white">{customerViewInsights && (<div className="grid grid-cols-3 gap-3"><div className="bg-blue-50 p-3 rounded-2xl border border-blue-100 text-center"><p className="text-2xl font-extrabold text-blue-600">{customerViewInsights.totalItems}</p><p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Orders</p></div><div className="bg-green-50 p-3 rounded-2xl border border-green-100 text-center"><p className="text-2xl font-extrabold text-green-600">{(customerViewInsights.totalSpent / 1000).toFixed(1)}k</p><p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Spent</p></div><div className="bg-orange-50 p-3 rounded-2xl border border-orange-100 text-center"><p className="text-2xl font-extrabold text-orange-600">{customerViewInsights.totalItems > 0 ? (customerViewInsights.totalSpent / customerViewInsights.totalItems).toFixed(0) : 0}</p><p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Avg Val</p></div></div>)}<div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-3 relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-5"><Icons.User className="w-24 h-24" /></div><div className="flex justify-between items-center mb-2"><h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Information</h4>{!isEditingCustomer && <button onClick={startEditingCustomer} className="text-xs text-brand font-bold hover:underline">Edit</button>}</div><div className="flex items-center gap-3 text-gray-700"><div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400"><span className="text-xs">📞</span></div>{isEditingCustomer ? <input className="font-medium text-sm bg-white border border-gray-200 rounded px-2 py-1 flex-1" value={tempCustomerData.phone || ''} onChange={e => setTempCustomerData({ ...tempCustomerData, phone: e.target.value })} placeholder="Phone" /> : <span className="font-medium text-sm">{viewCustomer.phone || 'No Phone'}</span>}</div><div className="flex items-center gap-3 text-gray-700"><div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400"><span className="text-xs font-bold">@</span></div>{isEditingCustomer ? <input className="font-medium text-sm bg-white border border-gray-200 rounded px-2 py-1 flex-1" value={tempCustomerData.email || ''} onChange={e => setTempCustomerData({ ...tempCustomerData, email: e.target.value })} placeholder="Email" /> : <span className="font-medium text-sm">{viewCustomer.email || 'No Email'}</span>}</div><div className="flex items-start gap-3 text-gray-700"><div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400 flex-shrink-0"><Icons.MapPin className="w-4 h-4" /></div><div class="flex-1">{isEditingCustomer ? (<div className="space-y-2"><textarea className="font-medium text-sm leading-snug pt-1 bg-white border border-gray-200 rounded px-2 py-1 w-full" rows="2" value={tempCustomerData.address || ''} onChange={e => setTempCustomerData({ ...tempCustomerData, address: e.target.value })} placeholder="Address Line" /><div className="flex gap-2"><input className="font-medium text-sm bg-white border border-gray-200 rounded px-2 py-1 flex-1" value={tempCustomerData.city || ''} onChange={e => setTempCustomerData({ ...tempCustomerData, city: e.target.value })} placeholder="City" /><input className="font-medium text-sm bg-white border border-gray-200 rounded px-2 py-1 flex-1" value={tempCustomerData.state || ''} onChange={e => setTempCustomerData({ ...tempCustomerData, state: e.target.value })} placeholder="State" /></div></div>) : (<span className="font-medium text-sm leading-snug pt-1">{viewCustomer.address || 'No Address'}{viewCustomer.city ? `, ${viewCustomer.city}` : ''}{viewCustomer.state ? `, ${viewCustomer.state}` : ''}</span>)}</div></div>{isEditingCustomer && (<div className="flex gap-2 pt-2"><button onClick={saveCustomerEdit} className="flex-1 bg-brand text-white py-2 rounded-lg font-bold text-xs shadow">Save Changes</button><button onClick={() => setIsEditingCustomer(false)} className="flex-1 bg-gray-200 text-gray-600 py-2 rounded-lg font-bold text-xs">Cancel</button></div>)}</div>{viewCustomer.customFields && Object.keys(viewCustomer.customFields).length > 0 && (<div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3 flex items-center gap-2"><Icons.Database className="w-4 h-4 text-gray-400" /> Imported Data</h4><div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 text-xs">{Object.entries(viewCustomer.customFields).filter(([_, val]) => val && val !== '0' && val !== '0.00').map(([key, val]) => (<div key={key} className="flex justify-between p-3 hover:bg-gray-50"><span className="text-gray-500 font-medium">{key}</span><span className="text-gray-900 font-bold text-right max-w-[60%] truncate">{val}</span></div>))}</div></div>)}{customerViewInsights && (<div><h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-3 flex items-center gap-2"><Icons.Clipboard className="w-4 h-4 text-gray-400" /> Order History</h4><div className="space-y-3">{customerViewInsights.history.map(hist => (<div key={hist.id} className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setViewCustomer(null); setViewOrder(hist); }}><div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 border border-gray-200"><img src={hist.imageUrl} className="w-full h-full object-cover" /></div><div className="flex-1 min-w-0"><h5 className="font-bold text-gray-900 text-sm truncate">{hist.outfitName}</h5><p className="text-xs text-gray-500">#{hist.orderNumber} • {getSafeDate(hist.createdAt)}</p></div><div className="text-right"><p className="font-bold text-gray-900 text-sm">₹{cleanNumber(hist.finalSellingPrice) || cleanNumber(hist.orderTotal) || '-'}</p><span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${hist.status.includes('Shipped') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{hist.status === 'Order Shipped (Completed)' ? 'Shipped' : 'Active'}</span></div></div>))}{customerViewInsights.history.length === 0 && <p className="text-center text-gray-400 py-4 italic text-sm">No orders recorded yet.</p>}</div></div>)}</div></div></div>)}
 
                     {/* LEGACY ORDER MODAL, ADJUSTMENT MODAL, EDIT MODAL, DELETE CONFIRMATION, SHIPPING MODAL, IMAGE MODAL REMAIN UNCHANGED (INCLUDED FOR COMPLETENESS IN RUNNABLE CODE) */}
                     {showLegacyModal && (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-enter overflow-y-auto"><div className="bg-white p-6 rounded-3xl w-full max-w-lg shadow-2xl relative my-10"><button onClick={() => setShowLegacyModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icons.X className="w-6 h-6" /></button><h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><Icons.Database className="w-5 h-5 text-brand" /> Log Past Order</h3><div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 no-scrollbar"><div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Customer Details</h4><div className="grid grid-cols-2 gap-3 mb-2"><input className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="Order # (Required)" value={legacyForm.orderNumber} onChange={e => setLegacyForm({ ...legacyForm, orderNumber: e.target.value })} /><input className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="Name (Required)" value={legacyForm.customerName} onChange={e => setLegacyForm({ ...legacyForm, customerName: e.target.value })} /></div><input className="w-full p-2 bg-white rounded-lg border-none text-sm mb-2" placeholder="Phone Number" value={legacyForm.phone} onChange={e => setLegacyForm({ ...legacyForm, phone: e.target.value })} /><textarea className="w-full p-2 bg-white rounded-lg border-none text-sm mb-2" rows="2" placeholder="Delivery Address" value={legacyForm.address} onChange={e => setLegacyForm({ ...legacyForm, address: e.target.value })}></textarea><div className="grid grid-cols-2 gap-3"><input className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="City" value={legacyForm.city} onChange={e => setLegacyForm({ ...legacyForm, city: e.target.value })} /><input className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="State" value={legacyForm.state} onChange={e => setLegacyForm({ ...legacyForm, state: e.target.value })} /></div></div><div><label className="text-xs font-bold text-gray-500 uppercase">Outfit / Product</label><input list="outfit-suggestions-legacy" className="w-full p-2 bg-gray-50 rounded-xl mt-1 border border-transparent focus:bg-white focus:border-brand" value={legacyForm.outfitName} onChange={e => setLegacyForm({ ...legacyForm, outfitName: e.target.value })} placeholder="Select or Type Name" /><datalist id="outfit-suggestions-legacy">{outfitOptions.map(o => <option key={o.id} value={o.name} />)}</datalist></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-gray-500 uppercase">Size</label><select className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={legacyForm.size} onChange={e => setLegacyForm({ ...legacyForm, size: e.target.value })}>{['S', 'M', 'L', 'XL', 'XXL', 'Custom'].map(s => <option key={s} value={s}>{s}</option>)}</select></div><div><label className="text-xs font-bold text-gray-500 uppercase">Status</label><select className="w-full p-2 bg-gray-50 rounded-xl mt-1 border-none text-sm" value={legacyForm.status} onChange={e => setLegacyForm({ ...legacyForm, status: e.target.value })}><option value="Sent to Tailor">Sent to Tailor</option><option value="Received from Tailor">Received from Tailor</option><option value="Order Shipped (Completed)">Order Shipped</option></select></div></div><div className="bg-yellow-50 p-3 rounded-xl border border-yellow-100"><h4 className="text-xs font-bold text-yellow-700 uppercase mb-2">Financials & Costs</h4><div className="grid grid-cols-2 gap-3 mb-2"><input type="number" className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="Selling Price" value={legacyForm.sellingPrice} onChange={e => setLegacyForm({ ...legacyForm, sellingPrice: e.target.value })} /><input type="number" className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="Discount" value={legacyForm.discount} onChange={e => setLegacyForm({ ...legacyForm, discount: e.target.value })} /></div><div className="grid grid-cols-2 gap-3 mb-2"><input type="number" className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="Shipping Cost" value={legacyForm.shippingCost} onChange={e => setLegacyForm({ ...legacyForm, shippingCost: e.target.value })} /><input type="number" className="w-full p-2 bg-white rounded-lg border-none text-sm" placeholder="COD Charge" value={legacyForm.codCharge} onChange={e => setLegacyForm({ ...legacyForm, codCharge: e.target.value })} /></div><div className="grid grid-cols-2 gap-3 mb-2"><div className="col-span-2"><label className="text-xs font-bold text-yellow-800 uppercase block mb-1">COD Remit Date</label><input type="date" className="w-full p-2 bg-white rounded-lg border border-yellow-300 text-sm" value={legacyForm.codRemittanceDate} onChange={e => setLegacyForm({ ...legacyForm, codRemittanceDate: e.target.value })} /></div></div><div className="mb-2"><label className="text-xs font-bold text-yellow-800 uppercase block mb-1">Payment Method</label><select className="w-full p-2 bg-white rounded-lg border border-yellow-300 text-sm" value={legacyForm.paymentMethod} onChange={e => setLegacyForm({ ...legacyForm, paymentMethod: e.target.value })}><option value="Prepaid">Prepaid</option><option value="COD">COD</option></select></div><input type="number" className="w-full p-2 bg-white rounded-lg border-none text-sm mb-2" placeholder="Cost Price (Override)" value={legacyForm.acquisitionCost} onChange={e => setLegacyForm({ ...legacyForm, acquisitionCost: e.target.value })} /><input className="w-full p-2 bg-white rounded-lg border-none text-sm mb-2" placeholder="Source (e.g. In-house, Vendor X)" value={legacyForm.source} onChange={e => setLegacyForm({ ...legacyForm, source: e.target.value })} /></div><div className="bg-gray-50 p-3 rounded-xl"><div className="flex justify-between items-center mb-2"><label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1"><Icons.Box className="w-4 h-4" /> Link Fabric (Optional)</label><div className="flex items-center gap-2"><input type="checkbox" id="deductStock" className="accent-brand w-4 h-4" checked={legacyForm.deductStock} onChange={e => setLegacyForm({ ...legacyForm, deductStock: e.target.checked })} /><label htmlFor="deductStock" className="text-xs font-bold text-brand cursor-pointer">Deduct Stock?</label></div></div><select className="w-full p-2 bg-white rounded-lg border border-gray-200 text-sm mb-2" value={legacyForm.fabricId} onChange={e => setLegacyForm({ ...legacyForm, fabricId: e.target.value })}><option value="">-- No Fabric Linked --</option>{fabricOptions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select>{legacyForm.fabricId && legacyForm.deductStock && (<input type="number" step="0.1" className="w-full p-2 bg-white rounded-lg border border-red-200 text-sm" placeholder="Amount Used (meters)" value={legacyForm.cutAmount} onChange={e => setLegacyForm({ ...legacyForm, cutAmount: e.target.value })} />)}</div><div><label className="text-xs font-bold text-gray-500 uppercase">Notes</label><textarea className="w-full p-2 bg-gray-50 rounded-xl mt-1 border border-transparent focus:bg-white focus:border-brand text-sm" rows="2" value={legacyForm.notes} onChange={e => setLegacyForm({ ...legacyForm, notes: e.target.value })}></textarea></div></div><div className="mt-4 flex gap-3"><button onClick={handleLegacySubmit} disabled={isUploading} className="flex-1 bg-brand text-white py-3 rounded-xl font-bold shadow-lg flex justify-center items-center gap-2">{isUploading ? 'Saving...' : 'Add Record'}</button></div></div></div>)}
