@@ -179,8 +179,8 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
             {userRole === 'admin' && (
                 <div className="flex justify-end mb-4">
                     <div className="bg-gray-100 p-1 rounded-lg flex text-xs font-bold">
-                        <button onClick={() => setFinancialViewMode('all')} className={`px-3 py-1 rounded-md ${financialViewMode === 'all' ? 'bg-white shadow text-gray-900 dark:text-white : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400'}`}>All Time</button>
-                        <button onClick={() => setFinancialViewMode('month')} className={`px-3 py-1 rounded-md ${financialViewMode === 'month' ? 'bg-white shadow text-gray-900 dark:text-white : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400'}`}>This Month</button>
+                        <button onClick={() => setFinancialViewMode('all')} className={`px-3 py-1 rounded-md ${financialViewMode === 'all' ? 'bg-white shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>All Time</button>
+                        <button onClick={() => setFinancialViewMode('month')} className={`px-3 py-1 rounded-md ${financialViewMode === 'month' ? 'bg-white shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>This Month</button>
                     </div>
                 </div>
             )}
@@ -210,7 +210,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
                     <div>
                         {userRole === 'admin' ? (
                             <>
-                                <h3 className="text-2xl font-bold text-gray-900
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">₹{financialMetrics.netProfit.toLocaleString()}</h3>
                                 <p className="text-gray-400 dark:text-gray-500 text-xs font-medium">Net Profit</p>
                                 <div className="mt-2 text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 space-y-1">
                                     <p className="text-green-600 font-bold">{financialMetrics.profitMargin}% Margin</p>
@@ -218,7 +218,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
                             </>
                         ) : (
                             <>
-                                <h3 className="text-2xl font-bold text-gray-900
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{orderCounts.totalCustomers}</h3>
                                 <p className="text-gray-400 dark:text-gray-500 text-xs font-medium">Total Customers</p>
                             </>
                         )}
@@ -229,22 +229,22 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
             {userRole === 'admin' && (
                 <>
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800 border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
                             <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Daily Profit</p>
-                            <p className="text-xl font-bold text-gray-800
+                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{(financialMetrics.netProfit / 30).toFixed(0)}</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800 border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
                             <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Rev / Meter</p>
-                            <p className="text-xl font-bold text-gray-800
+                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{inventoryStats.revenuePerMeter.toLocaleString()}</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800 border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
                             <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Potential Rev</p>
-                            <p className="text-xl font-bold text-gray-800
+                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{(inventoryStats.totalPotentialRevenue / 1000).toFixed(1)}k</p>
                             <p className="text-[10px] font-bold text-green-600 mt-1">+{inventoryStats.percentageIncrease.toFixed(0)}% Potential ROI</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800 border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
                             <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Stock Value</p>
-                            <p className="text-xl font-bold text-gray-800
+                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{(inventoryStats.totalStockValue / 1000).toFixed(1)}k</p>
                             <div className="flex gap-2 text-[9px] mt-1 text-gray-500">
                                 <span>Fab: {(inventoryStats.totalFabricCostValuation / 1000).toFixed(1)}k</span>
                                 <span>|</span>
@@ -263,28 +263,28 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
                                 <div className="flex justify-between text-orange-600"><span>COD/Acq:</span> <span className="font-bold">₹{(financialMetrics.breakdown.cod / 1000).toFixed(1)}k</span></div>
                             </div>
                         </div>
-                        <div className="bg-white p-4 rounded-3xl shadow-soft border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft border dark:border-gray-800">
                             <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Payment Split</p>
                             <div className="flex items-center justify-center h-20">
-                                <div className="text-center">
-                                    <p className="text-xl font-bold text-gray-800 dark:text-white <span className="text-xs font-normal text-gray-400">COD</span></p>
-                                    <p className="text-xl font-bold text-gray-800 dark:text-white <span className="text-xs font-normal text-gray-400">Prepaid</span></p>
+                                <div className="text-center space-y-1">
+                                    <p className="text-xl font-bold text-gray-800 dark:text-white">{orderCounts.codCount} <span className="text-xs font-normal text-gray-400">COD</span></p>
+                                    <p className="text-xl font-bold text-gray-800 dark:text-white">{orderCounts.prepaidCount} <span className="text-xs font-normal text-gray-400">Prepaid</span></p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-3xl shadow-soft border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft border dark:border-gray-800">
                             <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Customer Metrics</p>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-800
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 Customers</p>
+                                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{orderCounts.totalCustomers}</p>
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Customers</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-lg font-bold text-green-600">₹{(financialMetrics.customerMetrics.avgRevenue / 1000).toFixed(1)}k</p>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 Revenue</p>
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Avg Revenue</p>
                                 </div>
                             </div>
                         </div>
@@ -294,7 +294,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
                                 <div>
                                     <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{financialMetrics.customerMetrics.topCustomers[0].name}</p>
                                     <p className="text-xl font-bold text-purple-600">₹{(financialMetrics.customerMetrics.topCustomers[0].revenue / 1000).toFixed(1)}k</p>
-                                    <p className="text-[10px] text-gray-600 dark:text-gray-400 dark:text-gray-500 orders</p>
+                                    <p className="text-[10px] text-gray-600 dark:text-gray-400">{financialMetrics.customerMetrics.topCustomers[0].orders} orders</p>
                                 </div>
                             ) : (
                                 <p className="text-xs text-gray-400">No customers yet</p>

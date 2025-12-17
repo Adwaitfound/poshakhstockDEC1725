@@ -188,7 +188,7 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
     return (
         <div className="space-y-6 fade-in pb-20">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white Insights</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Insights</h2>
             </div>
 
             {/* Key Metrics Overview */}
@@ -235,16 +235,16 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
             </div>
 
             {/* Revenue Breakdown */}
-            <div className="bg-white dark:bg-gray-950 p-5 rounded-2xl shadow-card border dark:border-gray-800 border dark:border-gray-800">
+            <div className="bg-white dark:bg-gray-950 p-5 rounded-2xl shadow-card border dark:border-gray-800">
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-brand />
+                    <PieChart className="w-5 h-5 text-brand" />
                     Revenue by Category
                 </h3>
                 <div className="space-y-3">
                     <div>
                         <div className="flex justify-between mb-1">
-                            <span className="text-sm text-gray-600
-                            <span className="text-sm font-bold text-gray-900
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Outfits</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.outfitRevenue)}</span>
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div
@@ -255,8 +255,8 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
                     </div>
                     <div>
                         <div className="flex justify-between mb-1">
-                            <span className="text-sm text-gray-600
-                            <span className="text-sm font-bold text-gray-900
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Fabrics</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.fabricRevenue)}</span>
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div
@@ -277,9 +277,9 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
                         const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0
                         return (
                             <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                                <span className="text-xs font-bold text-gray-900
+                                <span className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(data.revenue / 1000)}k</span>
                                 <div className="w-full bg-gradient-to-t from-brand to-green-400 rounded-t-lg" style={{ height: `${height}%`, minHeight: '4px' }} />
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{data.month}</span>
                             </div>
                         )
                     })}
@@ -287,27 +287,27 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
             </div>
 
             {/* Expense Breakdown */}
-            <div className="bg-white p-5 rounded-2xl shadow-card border dark:border-gray-800">
+            <div className="bg-white dark:bg-gray-950 p-5 rounded-2xl shadow-card border dark:border-gray-800">
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">Expense Breakdown</h3>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 Costs</span>
-                        <span className="text-sm font-bold text-gray-900
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Fabric Costs</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.fabricCosts)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 Costs</span>
-                        <span className="text-sm font-bold text-gray-900
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Stitching Costs</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.stitchingCosts)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 Costs</span>
-                        <span className="text-sm font-bold text-gray-900
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Shipping Costs</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.shippingCosts)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 Charges</span>
-                        <span className="text-sm font-bold text-gray-900
+                        <span className="text-sm text-gray-600 dark:text-gray-400">COD Charges</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.codCharges)}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between items-center">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white Expenses</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">Total Expenses</span>
                         <span className="text-sm font-bold text-red-600">{formatCurrency(metrics.totalCosts)}</span>
                     </div>
                 </div>
@@ -350,12 +350,12 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Total Customers</p>
-                        <p className="text-2xl font-bold text-gray-900
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Customers</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.totalCustomers}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Avg Customer Value</p>
-                        <p className="text-2xl font-bold text-gray-900
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg Customer Value</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.avgCustomerValue)}</p>
                     </div>
                 </div>
             </div>
@@ -378,24 +378,24 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
                 </div>
                 <div className="space-y-2">
                     {(showAllCustomers ? metrics.customerRevenueData : metrics.customerRevenueData.slice(0, 10)).map((customer, idx) => (
-                        <div key={idx} className="p-3 hover:bg-gray-50 dark:bg-gray-900 rounded-lg transition-colors">
+                        <div key={idx} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-colors">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                        idx === 1 ? 'bg-gray-200 text-gray-700 dark:text-gray-300 :
-                                            idx === 2 ? 'bg-orange-100 text-orange-700' :
-                                                'bg-blue-100 text-blue-600'
+                                            idx === 1 ? 'bg-gray-200 text-gray-700 dark:text-gray-300' :
+                                                idx === 2 ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-blue-100 text-blue-600'
                                         }`}>
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{customer.name}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 orders • Avg: ₹{(customer.avgOrderValue / 1000).toFixed(1)}k</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{customer.orders} orders • Avg: ₹{(customer.avgOrderValue / 1000).toFixed(1)}k</p>
                                     </div>
                                 </div>
                                 <div className="text-right ml-3">
                                     <p className="text-sm font-bold text-brand">{formatCurrency(customer.revenue)}</p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{((customer.revenue / metrics.totalRevenue) * 100).toFixed(1)}%</p>
                                 </div>
                             </div>
                             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

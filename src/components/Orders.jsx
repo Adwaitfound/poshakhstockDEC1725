@@ -129,12 +129,84 @@ export default function Orders({
     }
 
     const handleQuickReceive = async (orderId) => {
-        const db = getDb()
-        await updateDoc(doc(db, ORDERS_COLLECTION, orderId), {
-            status: 'Received from Tailor',
-            updatedAt: serverTimestamp()
-        })
-        if (onDataChanged) await onDataChanged()
+        const order = allOrders.find(o => o.id === orderId)
+        if (!order || order.orderType !== 'stock') {
+            // For non-stock orders, keep the old simple behavior
+            const db = getDb()
+            await updateDoc(doc(db, ORDERS_COLLECTION, orderId), {
+                status: 'Received from Tailor',
+                updatedAt: serverTimestamp()
+            })
+            if (onDataChanged) await onDataChanged()
+            return
+        }
+
+        // For stock orders: partial receive with per-size quantities
+        const sizes = ['S', 'M', 'L', 'XL', 'XXL']
+        const receivedBreakdown = {}
+        let totalReceived = 0
+
+        for (const size of sizes) {
+            const qtyStr = prompt(`Please enter the quantity for size ${size} (or 0 to skip):`, '0')
+            if (qtyStr === null) return // User cancelled
+            const qty = parseInt(qtyStr) || 0
+            if (qty > 0) {
+                receivedBreakdown[size] = qty
+                totalReceived += qty
+            }
+        }
+
+        if (totalReceived === 0) {
+            alert('No quantities entered. Receipt cancelled.')
+            return
+        }
+
+        setIsUploading(true)
+        try {
+            const db = getDb()
+            
+            // Update the production order with receivedBreakdown
+            await updateDoc(doc(db, ORDERS_COLLECTION, orderId), {
+                status: 'Received from Tailor',
+                receivedBreakdown,
+                updatedAt: serverTimestamp()
+            })
+
+            // Find the matching outfit and increment stock per size
+            const outfit = inventoryItems.find(i => i.name === order.outfitName && i.type === 'outfit')
+            if (outfit) {
+                const outfitRef = doc(db, FABRICS_COLLECTION, outfit.id)
+                const stockUpdates = {}
+                for (const [size, qty] of Object.entries(receivedBreakdown)) {
+                    stockUpdates[`stockBreakdown.${size}`] = increment(qty)
+                }
+                stockUpdates.updatedAt = serverTimestamp()
+                await updateDoc(outfitRef, stockUpdates)
+
+                // Log history for each size
+                for (const [size, qty] of Object.entries(receivedBreakdown)) {
+                    await addDoc(collection(outfitRef, 'history'), {
+                        type: 'OUTFIT_ADD',
+                        amount: qty,
+                        size,
+                        status: 'Received',
+                        orderNumber: order.orderNumber || orderId,
+                        user: {
+                            name: userProfile?.displayName || 'Unknown',
+                            email: userProfile?.email || ''
+                        },
+                        timestamp: serverTimestamp()
+                    })
+                }
+            }
+
+            if (onDataChanged) await onDataChanged()
+        } catch (error) {
+            console.error('Error receiving order:', error)
+            alert('Failed to receive order: ' + error.message)
+        } finally {
+            setIsUploading(false)
+        }
     }
 
     const handleStockOrderSubmit = async (e) => {

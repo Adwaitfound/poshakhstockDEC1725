@@ -75,91 +75,89 @@ export default function HistoryModal({ itemId, onClose }) {
                                                         {log.type}
                                                     </span>
                                                     {log.size && (
-                                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 {log.size}</span>
+                                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{log.size}</span>
                                                     )}
                                                 </div>
                                                 <div className="text-sm space-y-1">
                                                     <div className="flex gap-2">
-                                                        <span className="text-gray-500">
-                                                        <span className="font-bold text-gray-900">
+                                                        <span className="text-gray-500">Amount:</span>
+                                                        <span className="font-bold text-gray-900 dark:text-white">
                                                             {parseFloat(log.amountUsed || 0).toFixed(2)} {log.size ? 'pcs' : 'm'}
                                                         </span>
-                                                </div>
-                                                {log.orderNumber && (
-                                                    <div className="flex gap-2">
-                                                        <span className="text-gray-500">
-                                                            <span className="font-medium text-gray-700
-                                                        </div>
-                                                )}
-                                                {log.productName && (
-                                                    <div className="flex gap-2">
-                                                        <span className="text-gray-500">
-                                                            <span className="font-medium text-gray-700
-                                                        </div>
-                                                )}
-                                                {log.status && (
-                                                    <div className="flex gap-2">
-                                                        <span className="text-gray-500">
-                                                            <span className="font-medium text-gray-700
-                                                        </div>
-                                                )}
-                                                {log.usedByEmail && (
-                                                    <div className="flex gap-2">
-                                                        <span className="text-gray-500">
-                                                            <span className="text-xs text-gray-600
-                                                        </div>
-                                                )}
-                                                <div className="flex gap-2">
-                                                    <span className="text-gray-500">
-                                                        <span className="text-xs text-gray-600
                                                     </div>
+                                                    {log.orderNumber && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-gray-500">Order:</span>
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">{log.orderNumber}</span>
+                                                        </div>
+                                                    )}
+                                                    {log.productName && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-gray-500">Product:</span>
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">{log.productName}</span>
+                                                        </div>
+                                                    )}
+                                                    {log.status && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-gray-500">Status:</span>
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">{log.status}</span>
+                                                        </div>
+                                                    )}
+                                                    {log.usedByEmail && (
+                                                        <div className="flex gap-2">
+                                                            <span className="text-gray-500">By:</span>
+                                                            <span className="text-xs text-gray-600 dark:text-gray-400">{log.usedByEmail}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex gap-2">
+                                                        <span className="text-gray-500">Date:</span>
+                                                        <span className="text-xs text-gray-600 dark:text-gray-400">{formatDate(log.usedAt)}</span>
+                                                    </div>
+                                                </div>
                                             </div>
+                                            <button
+                                                onClick={() => setDeleteLogConfirmationId(log.id)}
+                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                title="Delete log"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => setDeleteLogConfirmationId(log.id)}
-                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                            title="Delete log"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
-                                    </div>
-                        ))}
-                    </div>
+                                ))}
+                            </div>
                         )}
-                </div>
-            </div>
-        </div >
-
-            {/* Delete Confirmation */ }
-    {
-        deleteLogConfirmationId && (
-            <div className="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4 modal-enter">
-                <div className="bg-white dark:bg-gray-950 p-6 rounded-2xl w-full max-w-sm shadow-2xl border dark:border-gray-800 border dark:border-gray-800">
-                    <h3 className="text-lg font-bold mb-4 text-red-600 flex items-center gap-2">
-                        <Trash2 className="w-5 h-5" /> Delete Log Entry?
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-4">
-                        This will permanently remove this transaction from the history.
-                    </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => handleConfirmDeleteLog(itemId, deleteLogConfirmationId)}
-                            className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"
-                        >
-                            Delete
-                        </button>
-                        <button
-                            onClick={() => setDeleteLogConfirmationId(null)}
-                            className="flex-1 bg-gray-100 text-gray-600 dark:text-gray-400 dark:text-gray-500 py-3 rounded-xl font-bold"
-                        >
-                            Cancel
-                        </button>
                     </div>
                 </div>
             </div>
-        )
-    }
+
+            {/* Delete Confirmation */}
+            {deleteLogConfirmationId && (
+                <div className="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4 modal-enter">
+                    <div className="bg-white dark:bg-gray-950 p-6 rounded-2xl w-full max-w-sm shadow-2xl border dark:border-gray-800 border dark:border-gray-800">
+                        <h3 className="text-lg font-bold mb-4 text-red-600 flex items-center gap-2">
+                            <Trash2 className="w-5 h-5" /> Delete Log Entry?
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-4">
+                            This will permanently remove this transaction from the history.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => handleConfirmDeleteLog(itemId, deleteLogConfirmationId)}
+                                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"
+                            >
+                                Delete
+                            </button>
+                            <button
+                                onClick={() => setDeleteLogConfirmationId(null)}
+                                className="flex-1 bg-gray-100 text-gray-600 dark:text-gray-400 dark:text-gray-500 py-3 rounded-xl font-bold"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

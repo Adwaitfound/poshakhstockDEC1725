@@ -64,7 +64,7 @@ export default function Production({ productionBatches = [], inventoryItems = []
     return (
         <div className="space-y-6 fade-in pb-20">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Production</h2>
                 <button
                     onClick={onCreateBatch}
                     className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2"
@@ -127,11 +127,11 @@ export default function Production({ productionBatches = [], inventoryItems = []
                             <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
                                 <div>
                                     <p className="font-bold text-gray-900 dark:text-white text-sm">{fabric.name}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 available</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{fabric.available}m available</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-bold text-brand">~{fabric.potentialPieces} pieces</p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">@ {fabric.avgConsumption}m/pc</p>
                                 </div>
                             </div>
                         ))}
@@ -165,7 +165,7 @@ export default function Production({ productionBatches = [], inventoryItems = []
                                     )}
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{batch.outfitName}</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 {batch.fabricName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{batch.fabricName}</p>
                                         <div className="flex gap-3 mt-2 text-xs">
                                             <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded">
                                                 {batch.totalPieces} pcs
@@ -176,8 +176,8 @@ export default function Production({ productionBatches = [], inventoryItems = []
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white || 0).toFixed(0)}/pc</p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">₹{((batch.totalCost || 0) / (batch.totalPieces || 1)).toFixed(0)}/pc</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(batch.createdAt)}</p>
                                     </div>
                                 </div>
 
@@ -194,9 +194,9 @@ export default function Production({ productionBatches = [], inventoryItems = []
 
                                 {/* Tailor & Notes */}
                                 {(batch.tailorName || batch.notes) && (
-                                    <div className="mt-2 text-xs text-gray-600
+                                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                                         {batch.tailorName && <p>👔 {batch.tailorName}</p>}
-                                        {batch.notes && <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 italic mt-1">{batch.notes}</p>}
+                                        {batch.notes && <p className="text-gray-500 dark:text-gray-400 italic mt-1">{batch.notes}</p>}
                                     </div>
                                 )}
                             </div>

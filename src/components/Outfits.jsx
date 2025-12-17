@@ -84,8 +84,8 @@ export default function Outfits({ allOrders = [], inventoryItems = [] }) {
     return (
         <div className="space-y-6 fade-in">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white Performance</h2>
-                <div className="text-xs bg-white px-3 py-1 rounded-full shadow font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 border dark:border-gray-800">{outfitPerformanceList.length} Items</div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Outfit Performance</h2>
+                <div className="text-xs bg-white dark:bg-gray-950 px-3 py-1 rounded-full shadow font-bold text-gray-500 dark:text-gray-400 border dark:border-gray-800">{outfitPerformanceList.length} Items</div>
             </div>
 
             {/* Orphaned Orders Warning */}
@@ -139,7 +139,7 @@ export default function Outfits({ allOrders = [], inventoryItems = [] }) {
                         </div>
                         <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{outfit.name}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 {outfit.stock}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Stock: {outfit.stock}</p>
                         </div>
                         <div className="text-right">
                             <p className="font-bold text-green-600">₹{(outfit.revenue / 1000).toFixed(1)}k</p>

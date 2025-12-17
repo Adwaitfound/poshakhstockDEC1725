@@ -1,4 +1,11 @@
-# Poshakh Manager — Local React scaffold
+# Poshakh Manager — Canonical Code & Deployment
+
+This repo contains two code paths:
+
+- Canonical production app: `dist/index.html` (single‑file Apple‑style UI, deployed to https://app.poshakhfabrics.com/)
+- Legacy/dev scaffold: `src/` (Vite + React components used earlier during migration)
+
+For parity with the live app, edit and deploy from `dist/`. The Firebase Hosting config points to `dist`.
 
 Quick start
 
@@ -8,18 +15,18 @@ Quick start
 npm install
 ```
 
-2. Run dev server
+2. Run dev server (for `src/` scaffold)
 
 ```bash
 npm run dev
 ```
 
-What I added
+What’s included
 - Vite + React scaffold
 - `src/firebase.js` helper that initializes Firebase and exposes `subscribeCollection`
 - Basic `Inventory` component that reads `fabrics` collection
 
-Connect to an existing Firebase project
+Connect to Firebase (for `src/` scaffold)
 
 1. Create a `.env` file at the project root with your Firebase config (these keys are safe to include in client apps):
 
@@ -42,7 +49,21 @@ npm run dev
 
 If you prefer, you can also pass a config object to `initFirebase()` directly — see `src/firebase.js`.
 
-To deploy to Firebase Hosting: run `firebase init` (choose Hosting) and set build output to `dist`, then `npm run build` and `firebase deploy`.
+Deploy to Firebase Hosting
+
+- The hosting `public` directory is `dist` (see `firebase.json`).
+- If you are editing the single‑file app, deploy directly:
+
+```bash
+firebase deploy --only hosting
+```
+
+- If you are editing the React scaffold in `src/`, build then deploy:
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
 
 Enable Anonymous Auth and recommended rules (local testing)
 
@@ -60,7 +81,7 @@ service cloud.firestore {
 
 3. After testing, tighten rules to restrict writes/reads as appropriate for your app.
 
-CI / Automatic deploys (recommended)
+CI / Automatic deploys
 
 You can add a GitHub Actions workflow to build and deploy to Firebase Hosting automatically when you push to `main`.
 
@@ -110,7 +131,6 @@ What I added
 - `src/firebase.js` helper that initializes Firebase and exposes `subscribeCollection`
 - Basic `Inventory` component that reads `fabrics` collection
 
-Next steps
-- Migrate UI pieces from your `index.html` into React components (I can extract header, forms, and functions incrementally).
-- Optionally add Tailwind build integration or keep using CDN for quick iteration.
-- To deploy to Firebase Hosting: run `firebase init` (choose Hosting) and set build output to `dist`, then `npm run build` and `firebase deploy`.
+Notes
+- `dist/` is tracked in git to keep production code in sync with the deployed app.
+- `src/` remains as a scaffold for future modularization.
