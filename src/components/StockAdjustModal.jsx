@@ -84,7 +84,7 @@ export default function StockAdjustModal({ item, type, onClose, userProfile, onD
                             <button
                                 key={s}
                                 onClick={() => setSize(s)}
-                                className={`w-10 h-10 rounded-full font-bold text-sm ${size === s ? 'bg-outfit-600 text-white' : 'bg-gray-100 text-gray-500">
+                                className={`w-10 h-10 rounded-full font-bold text-sm ${size === s ? 'bg-outfit-600 text-white' : 'bg-gray-100 text-gray-500'}`}
                             >
                                 {s}
                             </button>

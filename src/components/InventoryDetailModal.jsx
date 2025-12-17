@@ -6,13 +6,13 @@ export default function InventoryDetailModal({ item, onClose, onOpenEdit, onOpen
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center modal-enter backdrop-blur-sm">
             <div className="bg-white dark:bg-gray-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl h-[85vh] sm:h-auto overflow-hidden flex flex-col shadow-2xl border dark:border-gray-800 border dark:border-gray-800">
                 <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900 flex-shrink-0">
-                    <h3 className="font-bold text-lg text-gray-900">
+                    <h3 className="font-bold text-lg text-gray-900">Item Details</h3>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 dark:text-gray-500 hover:text-gray-600">
                         <span className="text-2xl">×</span>
                     </button>
                 </div>
                 <div className="p-6 overflow-y-auto flex-1">
-                    <div className="relative h-48 rounded-2xl overflow-hidden mb-6 bg-gray-100
+                    <div className="relative h-48 rounded-2xl overflow-hidden mb-6 bg-gray-100">
                         {item.imageUrl && <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.name} />}
                     </div>
                     <div className="grid grid-cols-2 gap-3 mb-4">
@@ -38,6 +38,6 @@ export default function InventoryDetailModal({ item, onClose, onOpenEdit, onOpen
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

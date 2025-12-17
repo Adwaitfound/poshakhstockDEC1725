@@ -61,10 +61,14 @@ export default function AddItem({ onSuccess, onDataChanged }) {
 
     return (
         <div className="p-6 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add New Item</h2>
-            <div className="bg-gray-100 rounded-2xl p-1 flex gap-1 mb-6">
-                <button onClick={() => setAddItemType('fabric')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${addItemType === 'fabric' ? 'bg-white shadow text-brand' : 'text-gray-500">
-                <button onClick={() => setAddItemType('outfit')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${addItemType === 'outfit' ? 'bg-white shadow text-outfit-600' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 Outfit</button>
+            <h2 className="text-2xl font-bold text-white mb-6">Add New Item</h2>
+            <div className="bg-emerald-pine rounded-3xl p-1 flex gap-1 mb-6 border-2 border-lime-glow">
+                <button onClick={() => setAddItemType('fabric')} className={`flex-1 py-2 rounded-2xl text-sm font-bold transition-all ${addItemType === 'fabric' ? 'bg-lime-glow text-emerald-pine shadow' : 'text-lime-glow/60'}`}>
+                    Fabric
+                </button>
+                <button onClick={() => setAddItemType('outfit')} className={`flex-1 py-2 rounded-2xl text-sm font-bold transition-all ${addItemType === 'outfit' ? 'bg-lime-glow text-emerald-pine shadow' : 'text-lime-glow/60'}`}>
+                    Outfit
+                </button>
             </div>
             <form onSubmit={handleAddItem} className="space-y-4">
                 {error && (
@@ -90,33 +94,33 @@ export default function AddItem({ onSuccess, onDataChanged }) {
                     </div>
                 </div>
 
-                <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Item Name</label><input required className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder={addItemType === 'fabric' ? "e.g. Green Silk" : "e.g. Mirae Suit"} value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} /></div>
-                <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Website Product Name (Optional)</label><input className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="Display name for e-commerce" value={newItem.websiteProductName} onChange={e => setNewItem({ ...newItem, websiteProductName: e.target.value })} /></div>
+                <div><label className="text-xs font-bold text-lime-glow uppercase">Item Name</label><input required className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder={addItemType === 'fabric' ? "e.g. Green Silk" : "e.g. Mirae Suit"} value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} /></div>
+                <div><label className="text-xs font-bold text-lime-glow uppercase">Website Product Name (Optional)</label><input className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="Display name for e-commerce" value={newItem.websiteProductName} onChange={e => setNewItem({ ...newItem, websiteProductName: e.target.value })} /></div>
 
                 {addItemType === 'fabric' ? (
                     <>
                         <div className="grid grid-cols-2 gap-3">
-                            <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Total Length</label><input type="number" step="0.1" required className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. 10.5" value={newItem.totalLength} onChange={e => setNewItem({ ...newItem, totalLength: e.target.value })} /></div>
-                            <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Unit</label><select className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })}><option value="meters">Meters</option><option value="yards">Yards</option></select></div>
+                            <div><label className="text-xs font-bold text-lime-glow uppercase">Total Length</label><input type="number" step="0.1" required className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. 10.5" value={newItem.totalLength} onChange={e => setNewItem({ ...newItem, totalLength: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-lime-glow uppercase">Unit</label><select className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })}><option value="meters">Meters</option><option value="yards">Yards</option></select></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Length per Outfit</label><input type="number" step="0.1" required className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. 2.5" value={newItem.lengthRequiredPerOutfit} onChange={e => setNewItem({ ...newItem, lengthRequiredPerOutfit: e.target.value })} /></div>
-                            <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Cost per Meter (₹)</label><input type="number" step="0.01" required className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. 450" value={newItem.costPerMeter} onChange={e => setNewItem({ ...newItem, costPerMeter: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-lime-glow uppercase">Length per Outfit</label><input type="number" step="0.1" required className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. 2.5" value={newItem.lengthRequiredPerOutfit} onChange={e => setNewItem({ ...newItem, lengthRequiredPerOutfit: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-lime-glow uppercase">Cost per Meter (₹)</label><input type="number" step="0.01" required className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. 450" value={newItem.costPerMeter} onChange={e => setNewItem({ ...newItem, costPerMeter: e.target.value })} /></div>
                         </div>
-                        <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Location</label><input className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. Shelf A3" value={newItem.location} onChange={e => setNewItem({ ...newItem, location: e.target.value })} /></div>
+                        <div><label className="text-xs font-bold text-lime-glow uppercase">Location</label><input className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. Shelf A3" value={newItem.location} onChange={e => setNewItem({ ...newItem, location: e.target.value })} /></div>
                     </>
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-3">
-                            <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Selling Price (₹)</label><input type="number" required className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. 2999" value={newItem.sellingPrice} onChange={e => setNewItem({ ...newItem, sellingPrice: e.target.value })} /></div>
-                            <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Stitching Cost (₹)</label><input type="number" className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. 500" value={newItem.stitchingCost} onChange={e => setNewItem({ ...newItem, stitchingCost: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-lime-glow uppercase">Selling Price (₹)</label><input type="number" required className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. 2999" value={newItem.sellingPrice} onChange={e => setNewItem({ ...newItem, sellingPrice: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-lime-glow uppercase">Stitching Cost (₹)</label><input type="number" className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. 500" value={newItem.stitchingCost} onChange={e => setNewItem({ ...newItem, stitchingCost: e.target.value })} /></div>
                         </div>
-                        <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Fabric Length Required</label><input type="number" step="0.1" className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. 2.5" value={newItem.lengthRequiredPerOutfit} onChange={e => setNewItem({ ...newItem, lengthRequiredPerOutfit: e.target.value })} /></div>
-                        <div><label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Location</label><input className="w-full p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-700 mt-1" placeholder="e.g. Rack B2" value={newItem.location} onChange={e => setNewItem({ ...newItem, location: e.target.value })} /></div>
+                        <div><label className="text-xs font-bold text-lime-glow uppercase">Fabric Length Required</label><input type="number" step="0.1" className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. 2.5" value={newItem.lengthRequiredPerOutfit} onChange={e => setNewItem({ ...newItem, lengthRequiredPerOutfit: e.target.value })} /></div>
+                        <div><label className="text-xs font-bold text-lime-glow uppercase">Location</label><input className="w-full p-3 bg-white text-emerald-pine rounded-xl border-2 border-lime-glow font-semibold mt-1" placeholder="e.g. Rack B2" value={newItem.location} onChange={e => setNewItem({ ...newItem, location: e.target.value })} /></div>
                     </>
                 )}
 
-                <button type="submit" disabled={isUploading} className="w-full py-4 rounded-xl font-bold text-white shadow-lg mt-4 bg-brand hover:bg-brand-dark active:bg-brand-dark disabled:opacity-50">{isUploading ? 'Saving...' : 'Add Item'}</button>
+                <button type="submit" disabled={isUploading} className="w-full py-4 rounded-xl font-bold text-emerald-pine shadow-lg mt-4 bg-lime-glow hover:shadow-xl active:shadow-md disabled:opacity-50">{isUploading ? 'Saving...' : 'Add Item'}</button>
             </form>
         </div>
     )

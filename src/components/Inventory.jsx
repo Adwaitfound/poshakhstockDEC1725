@@ -53,11 +53,11 @@ export default function Inventory({
     return (
         <div className="space-y-4 fade-in">
             <div className="flex justify-between items-center mb-2">
-                <h2 className="text-2xl font-bold text-gray-900
+                <h2 className="text-2xl font-bold text-white">Inventory</h2>
                 {onAddClick && (
                     <button
                         onClick={onAddClick}
-                        className="text-sm bg-brand text-white px-4 py-2 rounded-full font-bold shadow-lg hover:bg-brand-dark flex items-center gap-1"
+                        className="text-sm bg-lime-glow text-emerald-pine px-4 py-2 rounded-full font-bold shadow-lg hover:shadow-xl flex items-center gap-1"
                     >
                         <Plus className="w-4 h-4" /> Add Item
                     </button>
@@ -70,14 +70,14 @@ export default function Inventory({
                         <Search className="w-5 h-5" />
                     </span>
                     <input
-                        className="w-full pl-10 p-3 bg-white rounded-xl border-none shadow-sm text-sm"
+                        className="w-full pl-10 p-3 bg-white rounded-xl border-2 border-lime-glow shadow-sm text-sm text-gray-900 placeholder-gray-400"
                         placeholder="Search..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <select
-                    className="text-xs bg-white border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 outline-none shadow-sm"
+                    className="text-xs bg-white border-2 border-lime-glow rounded-lg p-2 text-emerald-pine font-semibold outline-none shadow-sm"
                     value={sortKey}
                     onChange={e => setSortKey(e.target.value)}
                 >
@@ -92,7 +92,7 @@ export default function Inventory({
                     <button
                         key={f}
                         onClick={() => setInventoryFilter(f)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap capitalize transition-colors ${inventoryFilter === f ? 'bg-gray-800 text-white shadow-md' : 'bg-white text-gray-500 dark:text-gray-400 dark:text-gray-500 border border-gray-100'}`}
+                        className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap capitalize transition-all ${inventoryFilter === f ? 'bg-emerald-pine text-lime-glow shadow-lg' : 'bg-lime-glow text-emerald-pine border-2 border-lime-glow'}`}
                     >
                         {f}
                     </button>

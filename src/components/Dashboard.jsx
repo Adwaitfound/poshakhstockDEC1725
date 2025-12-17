@@ -58,7 +58,10 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
             totalFabricCostValuation,
             totalOutfitCostValuation,
             totalStockValuation,
-            percentageIncrease
+            percentageIncrease,
+            totalPotentialRevenue: potentialRevenue,
+            totalStockValue: totalStockValuation,
+            revenuePerMeter: totalStockCount > 0 ? potentialRevenue / totalStockCount : 0
         }
     }, [inventoryItems])
 
@@ -154,6 +157,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
         return {
             totalRevenue: totalRevenue.toFixed(0),
             totalProfit: totalProfit.toFixed(0),
+            netProfit: parseInt(totalProfit),
             totalSold,
             dailyProfit,
             revPerMeter: revPerMeter.toFixed(0),
@@ -177,132 +181,120 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
     return (
         <>
             {userRole === 'admin' && (
-                <div className="flex justify-end mb-4">
-                    <div className="bg-gray-100 p-1 rounded-lg flex text-xs font-bold">
-                        <button onClick={() => setFinancialViewMode('all')} className={`px-3 py-1 rounded-md ${financialViewMode === 'all' ? 'bg-white shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>All Time</button>
-                        <button onClick={() => setFinancialViewMode('month')} className={`px-3 py-1 rounded-md ${financialViewMode === 'month' ? 'bg-white shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>This Month</button>
+                <div className="flex justify-end mb-6">
+                    <div className="bg-transparent p-1 rounded-3xl flex text-xs font-bold shadow-sm border-3 border-lime-glow">
+                        <button onClick={() => setFinancialViewMode('all')} className={`px-5 py-2 rounded-2xl transition-all font-semibold ${financialViewMode === 'all' ? 'bg-emerald-pine text-lime-glow shadow-lg' : 'text-emerald-pine/60 hover:text-emerald-pine'}`}>All Time</button>
+                        <button onClick={() => setFinancialViewMode('month')} className={`px-5 py-2 rounded-2xl transition-all font-semibold ${financialViewMode === 'month' ? 'bg-emerald-pine text-lime-glow shadow-lg' : 'text-emerald-pine/60 hover:text-emerald-pine'}`}>This Month</button>
                     </div>
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-brand text-white p-5 rounded-3xl shadow-soft flex flex-col justify-between h-40 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-20">
-                        <TrendingUp className="w-12 h-12" />
-                    </div>
-                    <div>
-                        {userRole === 'admin' ? (
-                            <>
-                                <h3 className="text-2xl font-bold">₹{parseInt(financialMetrics.totalRevenue).toLocaleString()}</h3>
-                                <p className="text-brand-100 text-xs font-medium mt-1">Total Revenue</p>
-                            </>
-                        ) : (
-                            <>
-                                <h3 className="text-2xl font-bold">{financialMetrics.totalSold}</h3>
-                                <p className="text-brand-100 text-xs font-medium mt-1">Total Orders</p>
-                            </>
-                        )}
-                        <p className="text-[10px] text-brand-200 mt-1">{financialMetrics.totalSold} Orders</p>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-950 p-5 rounded-3xl shadow-soft flex flex-col justify-between h-40 border dark:border-gray-800 border dark:border-gray-800">
-                    <div>
-                        {userRole === 'admin' ? (
-                            <>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">₹{financialMetrics.netProfit.toLocaleString()}</h3>
-                                <p className="text-gray-400 dark:text-gray-500 text-xs font-medium">Net Profit</p>
-                                <div className="mt-2 text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 space-y-1">
-                                    <p className="text-green-600 font-bold">{financialMetrics.profitMargin}% Margin</p>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{orderCounts.totalCustomers}</h3>
-                                <p className="text-gray-400 dark:text-gray-500 text-xs font-medium">Total Customers</p>
-                            </>
-                        )}
+            {/* Main Balance Card - Full Width */}
+            <div className="mb-6">
+                <div className="bg-lime-glow p-8 rounded-3xl shadow-xl relative overflow-hidden">
+                    <div className="grid grid-cols-2 gap-8">
+                        <div>
+                            <p className="text-xs text-emerald-pine mb-3 font-medium uppercase tracking-wider">Your Current Balance</p>
+                            {userRole === 'admin' ? (
+                                <h3 className="text-5xl font-bold mb-4 text-emerald-pine">₹{parseInt(financialMetrics.totalRevenue).toLocaleString()}</h3>
+                            ) : (
+                                <h3 className="text-5xl font-bold mb-4 text-emerald-pine">{financialMetrics.totalSold}</h3>
+                            )}
+                            <p className="text-base text-emerald-pine/80">{financialMetrics.totalSold} Orders</p>
+                        </div>
+                        <div className="flex flex-col justify-end text-right">
+                            {userRole === 'admin' && (
+                                <>
+                                    <p className="text-4xl font-bold text-emerald-pine mb-2">₹{financialMetrics.netProfit.toLocaleString()}</p>
+                                    <p className="text-sm text-emerald-pine/80">Net Profit ({financialMetrics.profitMargin}%)</p>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {userRole === 'admin' && (
-                <>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Daily Profit</p>
-                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{(financialMetrics.netProfit / 30).toFixed(0)}</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Rev / Meter</p>
-                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{inventoryStats.revenuePerMeter.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Potential Rev</p>
-                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{(inventoryStats.totalPotentialRevenue / 1000).toFixed(1)}k</p>
-                            <p className="text-[10px] font-bold text-green-600 mt-1">+{inventoryStats.percentageIncrease.toFixed(0)}% Potential ROI</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft flex flex-col justify-center border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Stock Value</p>
-                            <p className="text-xl font-bold text-gray-800 dark:text-white">₹{(inventoryStats.totalStockValue / 1000).toFixed(1)}k</p>
-                            <div className="flex gap-2 text-[9px] mt-1 text-gray-500">
-                                <span>Fab: {(inventoryStats.totalFabricCostValuation / 1000).toFixed(1)}k</span>
-                                <span>|</span>
-                                <span>Out: {(inventoryStats.totalOutfitCostValuation / 1000).toFixed(1)}k</span>
-                            </div>
-                        </div>
+            {/* Key Metrics - 4 Cards Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-lime-glow p-4 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Daily Profit</p>
+                    <p className="text-2xl font-bold text-emerald-pine">₹{(financialMetrics.netProfit / 30).toFixed(0)}</p>
+                </div>
+                <div className="bg-lime-glow p-4 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Rev / Meter</p>
+                    <p className="text-2xl font-bold text-emerald-pine">₹{inventoryStats.revenuePerMeter.toLocaleString()}</p>
+                </div>
+                <div className="bg-lime-glow p-4 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Potential Rev</p>
+                    <p className="text-2xl font-bold text-emerald-pine">₹{(inventoryStats.totalPotentialRevenue / 1000).toFixed(1)}k</p>
+                    <p className="text-[10px] font-bold text-emerald-pine/80 mt-1">+{inventoryStats.percentageIncrease.toFixed(0)}% ROI</p>
+                </div>
+                <div className="bg-lime-glow p-4 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Stock Value</p>
+                    <p className="text-2xl font-bold text-emerald-pine">₹{(inventoryStats.totalStockValue / 1000).toFixed(1)}k</p>
+                    <div className="flex gap-2 text-[9px] mt-1 text-emerald-pine/70">
+                        <span>Fab: {(inventoryStats.totalFabricCostValuation / 1000).toFixed(1)}k</span>
+                        <span>|</span>
+                        <span>Out: {(inventoryStats.totalOutfitCostValuation / 1000).toFixed(1)}k</span>
                     </div>
+                </div>
+            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft border dark:border-gray-800 border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Expenses</p>
-                            <div className="text-[10px] space-y-1">
-                                <div className="flex justify-between"><span>Fabric:</span> <span className="font-bold">₹{(financialMetrics.breakdown.fabric / 1000).toFixed(1)}k</span></div>
-                                <div className="flex justify-between"><span>Stitch:</span> <span className="font-bold">₹{(financialMetrics.breakdown.stitch / 1000).toFixed(1)}k</span></div>
-                                <div className="flex justify-between"><span>Ship:</span> <span className="font-bold">₹{(financialMetrics.breakdown.ship / 1000).toFixed(1)}k</span></div>
-                                <div className="flex justify-between text-orange-600"><span>COD/Acq:</span> <span className="font-bold">₹{(financialMetrics.breakdown.cod / 1000).toFixed(1)}k</span></div>
-                            </div>
+            {/* Expense and Payment Info - 2 Cards Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-lime-glow p-5 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-3">Expenses Breakdown</p>
+                    <div className="text-sm space-y-2">
+                        <div className="flex justify-between"><span className="text-emerald-pine/80">Fabric</span> <span className="font-bold text-emerald-pine">₹{(financialMetrics.breakdown.fabric / 1000).toFixed(1)}k</span></div>
+                        <div className="flex justify-between"><span className="text-emerald-pine/80">Stitch</span> <span className="font-bold text-emerald-pine">₹{(financialMetrics.breakdown.stitch / 1000).toFixed(1)}k</span></div>
+                        <div className="flex justify-between"><span className="text-emerald-pine/80">Ship</span> <span className="font-bold text-emerald-pine">₹{(financialMetrics.breakdown.ship / 1000).toFixed(1)}k</span></div>
+                        <div className="border-t border-emerald-pine/30 pt-2 flex justify-between"><span className="text-emerald-pine font-semibold">COD/Acq</span> <span className="font-bold text-emerald-pine">₹{(financialMetrics.breakdown.cod / 1000).toFixed(1)}k</span></div>
+                    </div>
+                </div>
+                <div className="bg-lime-glow p-5 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-3">Payment Split</p>
+                    <div className="flex items-center justify-around h-24">
+                        <div className="text-center">
+                            <p className="text-3xl font-bold text-emerald-pine">{financialMetrics.paymentSplit.cod}</p>
+                            <p className="text-xs text-emerald-pine/70 mt-1">COD</p>
                         </div>
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Payment Split</p>
-                            <div className="flex items-center justify-center h-20">
-                                <div className="text-center space-y-1">
-                                    <p className="text-xl font-bold text-gray-800 dark:text-white">{orderCounts.codCount} <span className="text-xs font-normal text-gray-400">COD</span></p>
-                                    <p className="text-xl font-bold text-gray-800 dark:text-white">{orderCounts.prepaidCount} <span className="text-xs font-normal text-gray-400">Prepaid</span></p>
-                                </div>
-                            </div>
+                        <div className="w-px h-12 bg-emerald-pine/30"></div>
+                        <div className="text-center">
+                            <p className="text-3xl font-bold text-emerald-pine">{financialMetrics.paymentSplit.prepaid}</p>
+                            <p className="text-xs text-emerald-pine/70 mt-1">Prepaid</p>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-950 p-4 rounded-3xl shadow-soft border dark:border-gray-800">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Customer Metrics</p>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{orderCounts.totalCustomers}</p>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Customers</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-lg font-bold text-green-600">₹{(financialMetrics.customerMetrics.avgRevenue / 1000).toFixed(1)}k</p>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Avg Revenue</p>
-                                </div>
-                            </div>
+            {/* Customer Metrics */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-lime-glow p-5 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-3">Customer Metrics</p>
+                    <div className="flex items-end justify-between">
+                        <div>
+                            <p className="text-3xl font-bold text-emerald-pine">{financialMetrics.customerMetrics.totalCustomers}</p>
+                            <p className="text-[10px] text-emerald-pine/70 mt-1">Total Customers</p>
                         </div>
-                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-3xl shadow-soft">
-                            <p className="text-xs text-purple-700 font-bold uppercase mb-2">Top Customer</p>
-                            {financialMetrics.customerMetrics.topCustomers.length > 0 ? (
-                                <div>
-                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{financialMetrics.customerMetrics.topCustomers[0].name}</p>
-                                    <p className="text-xl font-bold text-purple-600">₹{(financialMetrics.customerMetrics.topCustomers[0].revenue / 1000).toFixed(1)}k</p>
-                                    <p className="text-[10px] text-gray-600 dark:text-gray-400">{financialMetrics.customerMetrics.topCustomers[0].orders} orders</p>
-                                </div>
-                            ) : (
-                                <p className="text-xs text-gray-400">No customers yet</p>
-                            )}
+                        <div className="text-right">
+                            <p className="text-2xl font-bold text-emerald-pine">₹{(financialMetrics.customerMetrics.avgRevenue / 1000).toFixed(1)}k</p>
+                            <p className="text-[10px] text-emerald-pine/70 mt-1">Avg Revenue</p>
                         </div>
                     </div>
-                </>
-            )}
+                </div>
+                <div className="bg-emerald-pine p-5 rounded-3xl shadow-lg border-2 border-lime-glow">
+                    <p className="text-xs text-lime-glow font-semibold uppercase mb-1">⭐ Top Customer</p>
+                    {financialMetrics.customerMetrics.topCustomers.length > 0 ? (
+                        <div>
+                            <p className="text-lg font-bold text-lime-glow mt-2">{financialMetrics.customerMetrics.topCustomers[0].name}</p>
+                            <p className="text-2xl font-bold text-lime-glow mt-1">₹{(financialMetrics.customerMetrics.topCustomers[0].revenue / 1000).toFixed(1)}k</p>
+                            <p className="text-xs text-lime-glow/80 mt-2">{financialMetrics.customerMetrics.topCustomers[0].orders} orders</p>
+                        </div>
+                    ) : (
+                        <p className="text-xs text-lime-glow/50 mt-2">No customers yet</p>
+                    )}
+                </div>
+            </div>
         </>
     )
 }

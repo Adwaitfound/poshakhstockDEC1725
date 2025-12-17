@@ -151,83 +151,83 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
     if (!customer) return null
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center modal-enter backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-900 w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border dark:border-gray-800 border dark:border-gray-800">
-                <div className="bg-gray-50 dark:bg-gray-900 p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center flex-shrink-0">
+        <div className="fixed inset-0 bg-black/70 z-[60] flex items-end sm:items-center justify-center modal-enter backdrop-blur-sm">
+            <div className="w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-lime-glow/30 bg-black">
+                <div className="bg-emerald-pine p-6 border-b border-lime-glow/40 flex justify-between items-center flex-shrink-0 text-white">
                     <h3 className="font-bold text-lg">{isEditing ? 'Edit Customer' : customer.name}</h3>
                     <div className="flex items-center gap-2">
                         {!isEditing && (
                             <button
                                 onClick={() => setIsEditing(true)}
-                                className="p-2 rounded-full hover:bg-white text-blue-600"
+                                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
                             >
                                 <Edit2 className="w-5 h-5" />
                             </button>
                         )}
-                        <button onClick={onClose} className="p-2 rounded-full hover:bg-white text-gray-400 dark:text-gray-500 hover:text-gray-600">
+                        <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/15 text-white/80">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
 
-                <div className="p-6 overflow-y-auto flex-1">
+                <div className="p-6 overflow-y-auto flex-1 text-white">
                     {/* Edit Form */}
                     {isEditing ? (
                         <div className="space-y-4 mb-6">
                             <div>
-                                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 Name *</label>
+                                <label className="text-xs font-bold text-lime-glow">Name *</label>
                                 <input
                                     value={editForm.name}
                                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl mt-1"
+                                    className="w-full p-3 border-2 border-lime-glow/70 rounded-xl mt-1 bg-gray-900/80 text-white"
                                     placeholder="Customer name"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-700
+                                    <label className="text-xs font-bold text-lime-glow">Phone *</label>
                                     <input
                                         value={editForm.phone}
                                         onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl mt-1"
+                                        className="w-full p-3 border-2 border-lime-glow/70 rounded-xl mt-1 bg-gray-900/80 text-white"
                                         placeholder="Phone number"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-700
+                                    <label className="text-xs font-bold text-lime-glow">Email</label>
                                     <input
                                         value={editForm.email}
                                         onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl mt-1"
+                                        className="w-full p-3 border-2 border-lime-glow/70 rounded-xl mt-1 bg-gray-900/80 text-white"
                                         placeholder="Email"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-700
+                                <label className="text-xs font-bold text-lime-glow">Address</label>
                                 <input
                                     value={editForm.address}
                                     onChange={e => setEditForm({ ...editForm, address: e.target.value })}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl mt-1"
+                                    className="w-full p-3 border-2 border-lime-glow/70 rounded-xl mt-1 bg-gray-900/80 text-white"
                                     placeholder="Street address"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-700
+                                    <label className="text-xs font-bold text-lime-glow">City</label>
                                     <input
                                         value={editForm.city}
                                         onChange={e => setEditForm({ ...editForm, city: e.target.value })}
-                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl mt-1"
+                                        className="w-full p-3 border-2 border-lime-glow/70 rounded-xl mt-1 bg-gray-900/80 text-white"
                                         placeholder="City"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-700
+                                    <label className="text-xs font-bold text-lime-glow">State</label>
                                     <input
                                         value={editForm.state}
                                         onChange={e => setEditForm({ ...editForm, state: e.target.value })}
-                                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl mt-1"
+                                        className="w-full p-3 border-2 border-lime-glow/70 rounded-xl mt-1 bg-gray-900/80 text-white"
                                         placeholder="State"
                                     />
                                 </div>
@@ -236,7 +236,7 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                                 <button
                                     onClick={handleSaveCustomer}
                                     disabled={saving}
-                                    className="flex-1 bg-brand text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="flex-1 bg-lime-glow text-emerald-pine py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     <Save className="w-4 h-4" />
                                     {saving ? 'Saving...' : 'Save Changes'}
@@ -253,7 +253,7 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                                             state: customer.state || ''
                                         })
                                     }}
-                                    className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-bold text-gray-600
+                                    className="px-6 py-3 border-2 border-lime-glow rounded-xl font-bold text-lime-glow hover:bg-lime-glow/10"
                                 >
                                     Cancel
                                 </button>
@@ -262,19 +262,19 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                     ) : (
                         <>
                             {/* Customer Summary */}
-                            <div className="bg-gradient-to-br from-brand to-green-600 p-5 rounded-2xl text-white mb-4 shadow-lg">
+                            <div className="bg-emerald-pine p-5 rounded-2xl text-white mb-4 shadow-lg border border-lime-glow/40">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="w-16 h-16 rounded-full bg-white backdrop-blur-sm flex items-center justify-center font-bold text-xl border-2 border-white/30">
                                         {customer.name.substring(0, 2).toUpperCase()}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="font-bold text-lg">{customer.name}</p>
+                                        <p className="font-bold text-lg text-white">{customer.name}</p>
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             {customer.phone && (
-                                                <span className="text-xs bg-white px-2 py-0.5 rounded-full">📞 {customer.phone}</span>
+                                                <span className="text-xs bg-white text-emerald-pine px-2 py-0.5 rounded-full">📞 {customer.phone}</span>
                                             )}
                                             {customer.email && (
-                                                <span className="text-xs bg-white px-2 py-0.5 rounded-full">✉️ {customer.email}</span>
+                                                <span className="text-xs bg-white text-emerald-pine px-2 py-0.5 rounded-full">✉️ {customer.email}</span>
                                             )}
                                         </div>
                                     </div>
@@ -282,26 +282,26 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
 
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-3 gap-3">
-                                    <div className="bg-white backdrop-blur-sm rounded-xl p-3 text-center">
-                                        <p className="text-2xl font-bold">₹{(customerStats.totalSpent / 1000).toFixed(1)}k</p>
-                                        <p className="text-xs opacity-80 mt-1">Total Spent</p>
+                                    <div className="bg-emerald-900/80 rounded-xl p-3 text-center border border-lime-glow/30">
+                                        <p className="text-2xl font-bold text-white">₹{(customerStats.totalSpent / 1000).toFixed(1)}k</p>
+                                        <p className="text-xs text-lime-glow mt-1">Total Spent</p>
                                     </div>
-                                    <div className="bg-white backdrop-blur-sm rounded-xl p-3 text-center">
-                                        <p className="text-2xl font-bold">{customerStats.totalOrders}</p>
-                                        <p className="text-xs opacity-80 mt-1">Total Orders</p>
+                                    <div className="bg-emerald-900/80 rounded-xl p-3 text-center border border-lime-glow/30">
+                                        <p className="text-2xl font-bold text-white">{customerStats.totalOrders}</p>
+                                        <p className="text-xs text-lime-glow mt-1">Total Orders</p>
                                     </div>
-                                    <div className="bg-white backdrop-blur-sm rounded-xl p-3 text-center">
-                                        <p className="text-2xl font-bold">₹{customerStats.avgOrderValue.toFixed(0)}</p>
-                                        <p className="text-xs opacity-80 mt-1">Avg Order</p>
+                                    <div className="bg-emerald-900/80 rounded-xl p-3 text-center border border-lime-glow/30">
+                                        <p className="text-2xl font-bold text-white">₹{customerStats.avgOrderValue.toFixed(0)}</p>
+                                        <p className="text-xs text-lime-glow mt-1">Avg Order</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Address */}
                             {customer.address && (
-                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl mb-4">
-                                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase mb-1">Address</p>
-                                    <p className="text-sm text-gray-900
+                                <div className="bg-gray-900/80 border border-emerald-pine/60 p-4 rounded-xl mb-4">
+                                    <p className="text-xs font-bold text-lime-glow uppercase mb-1">Address</p>
+                                    <p className="text-sm text-white">
                                         {customer.address}
                                         {customer.city && `, ${customer.city}`}
                                         {customer.state && `, ${customer.state}`}
@@ -312,16 +312,16 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                             {/* Imported Custom Fields */}
                             {customer.customFields && Object.keys(customer.customFields).length > 0 && (
                                 <div className="mb-4">
-                                    <h4 className="text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-2">
-                                        <span className="w-1 h-4 bg-blue-500 rounded"></span>
+                                    <h4 className="text-xs font-bold text-lime-glow uppercase tracking-wide mb-2 flex items-center gap-2">
+                                        <span className="w-1 h-4 bg-lime-glow rounded"></span>
                                         Imported Data
                                     </h4>
-                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
+                                    <div className="bg-gray-900/80 border border-emerald-pine/60 p-4 rounded-xl">
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                             {Object.entries(customer.customFields).map(([key, value]) => (
                                                 <div key={key} className="">
-                                                    <p className="text-xs text-blue-600 font-semibold">{key}</p>
-                                                    <p className="text-sm text-gray-900
+                                                    <p className="text-xs text-lime-glow font-semibold">{key}</p>
+                                                    <p className="text-sm text-white">{value}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -333,14 +333,14 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
 
                     {/* Unmatched Orders Warning */}
                     {!isEditing && unmatchedOrders.length > 0 && (
-                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-xl mb-4">
+                        <div className="bg-amber-100 border-l-4 border-lime-glow p-4 rounded-xl mb-4 text-emerald-pine">
                             <div className="flex items-start gap-2">
-                                <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-5 h-5 text-emerald-pine flex-shrink-0 mt-0.5" />
                                 <div className="flex-1">
-                                    <h4 className="font-bold text-yellow-900 text-sm mb-1">
+                                    <h4 className="font-bold text-emerald-pine text-sm mb-1">
                                         {unmatchedOrders.length} Order{unmatchedOrders.length > 1 ? 's' : ''} Need Outfit Matching
                                     </h4>
-                                    <p className="text-xs text-yellow-800">
+                                    <p className="text-xs text-emerald-pine/80">
                                         Update outfit names below to match your inventory
                                     </p>
                                 </div>
@@ -351,7 +351,7 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                     {/* Order History */}
                     {!isEditing && (
                         <div>
-                            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-lime-glow mb-3 flex items-center gap-2">
                                 <Package className="w-4 h-4" />
                                 Order History ({customerOrders.length})
                             </h4>
@@ -411,26 +411,25 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
     }
 
     return (
-        <div className={`bg-gradient-to-r ${order.matchesInventory ? 'from-white to-gray-50 border-gray-200 dark:border-gray-700 : 'from-yellow-50 to-orange-50 border-yellow-300'} border-2 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow`}>
+        <div className={`${order.matchesInventory ? 'bg-gray-900/80 border-emerald-pine/60' : 'bg-gray-900/80 border-amber-500/60'} border-2 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow`}>
             <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="font-mono text-sm font-bold text-brand">#{order.orderNumber}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${order.status === 'Order Shipped (Completed)' ? 'bg-green-100 text-green-700' :
-                            order.status === 'Received from Tailor' ? 'bg-blue-100 text-blue-700' :
-                                order.status === 'Sent to Tailor' ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-gray-100 text-gray-600
-                            }`}>
+                        <span className="font-mono text-sm font-bold text-lime-glow">#{order.orderNumber}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${order.status === 'Order Shipped (Completed)' ? 'bg-emerald-700 text-white' :
+                            order.status === 'Received from Tailor' ? 'bg-emerald-800 text-lime-glow' :
+                                order.status === 'Sent to Tailor' ? 'bg-amber-600 text-white' :
+                                    'bg-gray-700 text-white'}`}>
                             {order.status}
                         </span>
                         {!order.matchesInventory && order.outfitName && (
-                            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold animate-pulse">
+                            <span className="text-xs bg-red-700 text-white px-2 py-1 rounded-full font-bold animate-pulse">
                                 ⚠️ NEEDS FIX
                             </span>
                         )}
                         <button
                             onClick={() => onDeleteOrder(order.id, order.orderNumber)}
-                            className="ml-auto text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                            className="ml-auto text-red-500 p-1.5 hover:bg-red-50/40 rounded-lg transition-colors"
                             title="Delete order"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -443,7 +442,7 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                                 <select
                                     value={selectedOutfit}
                                     onChange={e => setSelectedOutfit(e.target.value)}
-                                    className="flex-1 p-2 border-2 border-brand rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand/20"
+                                    className="flex-1 p-2 border-2 border-lime-glow/50 rounded-lg text-sm font-medium bg-black/20 text-white focus:ring-2 focus:ring-lime-glow/30"
                                 >
                                     <option value={order.outfitName}>{order.outfitName} (current)</option>
                                     {outfitOptions.map(outfit => (
@@ -455,7 +454,7 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                                 <select
                                     value={selectedSize}
                                     onChange={e => setSelectedSize(e.target.value)}
-                                    className="p-2 border-2 border-brand rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand/20 w-20"
+                                    className="p-2 border-2 border-lime-glow/50 rounded-lg text-sm font-medium bg-black/20 text-white focus:ring-2 focus:ring-lime-glow/30 w-20"
                                 >
                                     <option value="XS">XS</option>
                                     <option value="S">S</option>
@@ -471,7 +470,7 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                                         onUpdateOutfit(order.id, selectedOutfit, selectedSize)
                                         setEditing(false)
                                     }}
-                                    className="bg-brand text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-700 shadow-sm flex-1"
+                                    className="bg-lime-glow text-emerald-pine px-4 py-2 rounded-lg text-xs font-bold hover:bg-lime-glow/90 shadow-sm flex-1"
                                 >
                                     ✓ Save
                                 </button>
@@ -481,7 +480,7 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                                         setSelectedSize(order.size || 'M')
                                         setEditing(false)
                                     }}
-                                    className="text-gray-500 dark:text-gray-400 dark:text-gray-500 px-4 py-2 hover:bg-gray-100 rounded-lg"
+                                    className="text-white/70 px-4 py-2 hover:bg-white/10 rounded-lg"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -489,11 +488,11 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 mb-2">
-                            <p className="text-base font-bold text-gray-900 dark:text-white || 'Unknown'}</p>
+                            <p className="text-base font-bold text-white">{order.outfitName || 'Unknown'}</p>
                             {order.outfitName && (
                                 <button
                                     onClick={() => setEditing(true)}
-                                    className="text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors"
+                                    className="text-lime-glow p-1.5 hover:bg-lime-glow/20 rounded-lg transition-colors"
                                     title="Edit outfit name"
                                 >
                                     <Edit2 className="w-3.5 h-3.5" />
@@ -502,26 +501,26 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <div className="flex items-center gap-3 text-xs text-white/70">
                         <span>📅 {formatDate(order.createdAt)}</span>
-                        {order.size && <span className="bg-gray-100 px-2 py-0.5 rounded font-semibold">Size {order.size}</span>}
+                        {order.size && <span className="bg-black/20 border border-lime-glow/30 px-2 py-0.5 rounded font-semibold text-white">Size {order.size}</span>}
                     </div>
                 </div>
 
                 <div className="text-right flex-shrink-0">
-                    <p className="text-2xl font-bold text-green-600">₹{getOrderCost()}</p>
+                    <p className="text-2xl font-bold text-lime-glow">₹{getOrderCost()}</p>
                 </div>
             </div>
 
             {/* Show imported data if available */}
             {order.importedData && Object.keys(order.importedData).length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200
-                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase mb-2">📦 Order Details</p>
+                <div className="mt-3 pt-3 border-t border-emerald-pine/60">
+                    <p className="text-xs font-bold text-lime-glow uppercase mb-2">📦 Order Details</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         {Object.entries(order.importedData).slice(0, 6).map(([key, value]) => (
-                            <div key={key} className="bg-white px-2 py-1 rounded">
-                                <p className="text-xs text-gray-500">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{value}</p>
+                            <div key={key} className="bg-black/50 border border-emerald-pine/60 px-2 py-1 rounded">
+                                <p className="text-xs text-lime-glow/80">{key}</p>
+                                <p className="text-sm font-semibold text-white truncate">{value}</p>
                             </div>
                         ))}
                     </div>

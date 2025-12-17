@@ -3,7 +3,7 @@ import { getDb } from '../firebase'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { ORDERS_COLLECTION } from '../lib/utils'
 
-export default function ShippingModal({ visible, orderId, onClose }) {
+export default function ShippingModal({ visible, orderId, onClose, onDataChanged }) {
     const [form, setForm] = useState({ sellingPrice: '', shippingCost: '', otherExpenses: '' })
     const [error, setError] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -30,6 +30,7 @@ export default function ShippingModal({ visible, orderId, onClose }) {
                 updatedAt: serverTimestamp()
             })
             setForm({ sellingPrice: '', shippingCost: '', otherExpenses: '' })
+            if (onDataChanged) await onDataChanged()
             onClose()
         } catch (e) {
             console.error(e)
@@ -56,7 +57,7 @@ export default function ShippingModal({ visible, orderId, onClose }) {
                         />
                     </div>
                     <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 Cost (₹)</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500">Shipping Cost (₹)</label>
                         <input
                             type="number"
                             className="w-full p-2 border rounded-xl mt-1"
@@ -65,7 +66,7 @@ export default function ShippingModal({ visible, orderId, onClose }) {
                         />
                     </div>
                     <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 Expenses (₹)</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500">Additional Expenses (₹)</label>
                         <input
                             type="number"
                             className="w-full p-2 border rounded-xl mt-1"

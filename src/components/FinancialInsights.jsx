@@ -188,26 +188,26 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
     return (
         <div className="space-y-6 fade-in pb-20">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Insights</h2>
+                <h2 className="text-2xl font-bold text-lime-glow">Financial Insights</h2>
             </div>
 
             {/* Key Metrics Overview */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="bg-green-600 p-4 rounded-2xl shadow-card text-white">
+                <div className="bg-emerald-pine p-4 rounded-2xl shadow-card text-lime-glow border-2 border-lime-glow/60">
                     <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="w-5 h-5" />
+                        <DollarSign className="w-5 h-5 text-lime-glow" />
                         <p className="text-xs opacity-90">Total Revenue</p>
                     </div>
                     <p className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</p>
                     <p className="text-xs opacity-80 mt-1">All time</p>
                 </div>
-                <div className="bg-white dark:bg-gray-950 p-4 rounded-2xl shadow-card text-gray-900 dark:text-white dark:text-white border dark:border-gray-800 border dark:border-gray-800">
+                <div className="bg-green-tea p-4 rounded-2xl shadow-card text-emerald-pine border-2 border-lime-glow">
                     <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-5 h-5" />
-                        <p className="text-xs opacity-90">This Month</p>
+                        <Calendar className="w-5 h-5 text-emerald-pine" />
+                        <p className="text-xs font-semibold">This Month</p>
                     </div>
                     <p className="text-2xl font-bold">{formatCurrency(metrics.monthlyRevenue)}</p>
-                    <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 mt-1 text-emerald-pine/80">
                         {metrics.growthRate >= 0 ? (
                             <TrendingUp className="w-3 h-3" />
                         ) : (
@@ -216,51 +216,51 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
                         <p className="text-xs">{Math.abs(metrics.growthRate).toFixed(1)}% vs last month</p>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-950 p-4 rounded-2xl shadow-card text-gray-900 dark:text-white dark:text-white border dark:border-gray-800 border dark:border-gray-800">
+                <div className="bg-green-tea p-4 rounded-2xl shadow-card text-emerald-pine border-2 border-lime-glow">
                     <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="w-5 h-5" />
-                        <p className="text-xs opacity-90">Gross Profit</p>
+                        <TrendingUp className="w-5 h-5 text-emerald-pine" />
+                        <p className="text-xs font-semibold">Gross Profit</p>
                     </div>
                     <p className="text-2xl font-bold">{formatCurrency(metrics.grossProfit)}</p>
-                    <p className="text-xs opacity-80 mt-1">Margin: {metrics.profitMargin.toFixed(1)}%</p>
+                    <p className="text-xs text-emerald-pine/80 mt-1">Margin: {metrics.profitMargin.toFixed(1)}%</p>
                 </div>
-                <div className="bg-white dark:bg-gray-950 p-4 rounded-2xl shadow-card text-gray-900 dark:text-white dark:text-white border dark:border-gray-800 border dark:border-gray-800">
+                <div className="bg-green-tea p-4 rounded-2xl shadow-card text-emerald-pine border-2 border-lime-glow">
                     <div className="flex items-center gap-2 mb-2">
-                        <Package className="w-5 h-5" />
-                        <p className="text-xs opacity-90">Avg Order Value</p>
+                        <Package className="w-5 h-5 text-emerald-pine" />
+                        <p className="text-xs font-semibold">Avg Order Value</p>
                     </div>
                     <p className="text-2xl font-bold">{formatCurrency(metrics.avgOrderValue)}</p>
-                    <p className="text-xs opacity-80 mt-1">Per transaction</p>
+                    <p className="text-xs text-emerald-pine/80 mt-1">Per transaction</p>
                 </div>
             </div>
 
             {/* Revenue Breakdown */}
-            <div className="bg-white dark:bg-gray-950 p-5 rounded-2xl shadow-card border dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-brand" />
+            <div className="bg-emerald-pine p-5 rounded-2xl shadow-card border-2 border-lime-glow">
+                <h3 className="font-bold text-lime-glow mb-4 flex items-center gap-2">
+                    <PieChart className="w-5 h-5 text-lime-glow" />
                     Revenue by Category
                 </h3>
                 <div className="space-y-3">
                     <div>
-                        <div className="flex justify-between mb-1">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Outfits</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.outfitRevenue)}</span>
+                        <div className="flex justify-between mb-1 text-lime-glow">
+                            <span className="text-sm">Outfits</span>
+                            <span className="text-sm font-bold">{formatCurrency(metrics.outfitRevenue)}</span>
                         </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-emerald-pine/40 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full"
+                                className="h-full bg-lime-glow rounded-full"
                                 style={{ width: `${(metrics.outfitRevenue / metrics.totalRevenue) * 100}%` }}
                             />
                         </div>
                     </div>
                     <div>
-                        <div className="flex justify-between mb-1">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Fabrics</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.fabricRevenue)}</span>
+                        <div className="flex justify-between mb-1 text-lime-glow">
+                            <span className="text-sm">Fabrics</span>
+                            <span className="text-sm font-bold">{formatCurrency(metrics.fabricRevenue)}</span>
                         </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-emerald-pine/40 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full"
+                                className="h-full bg-green-tea rounded-full"
                                 style={{ width: `${(metrics.fabricRevenue / metrics.totalRevenue) * 100}%` }}
                             />
                         </div>
@@ -269,17 +269,19 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
             </div>
 
             {/* Monthly Revenue Trend */}
-            <div className="bg-white p-5 rounded-2xl shadow-card border dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Revenue Trend (Last 6 Months)</h3>
+            <div className="bg-green-tea p-5 rounded-2xl shadow-card border-2 border-lime-glow">
+                <h3 className="font-bold text-emerald-pine mb-4">Revenue Trend (Last 6 Months)</h3>
                 <div className="flex items-end justify-between gap-2 h-32">
                     {metrics.monthlyData.map((data, idx) => {
                         const maxRevenue = Math.max(...metrics.monthlyData.map(d => d.revenue))
                         const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0
                         return (
                             <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                                <span className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(data.revenue / 1000)}k</span>
-                                <div className="w-full bg-gradient-to-t from-brand to-green-400 rounded-t-lg" style={{ height: `${height}%`, minHeight: '4px' }} />
-                                <span className="text-xs text-gray-500 dark:text-gray-400">{data.month}</span>
+                                <span className="text-xs font-bold text-emerald-pine">{formatCurrency(data.revenue / 1000)}k</span>
+                                <div className="w-full bg-emerald-pine/30 rounded-t-lg" style={{ height: `${height}%`, minHeight: '4px' }}>
+                                    <div className="h-full w-full bg-lime-glow" />
+                                </div>
+                                <span className="text-xs text-emerald-pine/70">{data.month}</span>
                             </div>
                         )
                     })}
@@ -287,90 +289,90 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
             </div>
 
             {/* Expense Breakdown */}
-            <div className="bg-white dark:bg-gray-950 p-5 rounded-2xl shadow-card border dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Expense Breakdown</h3>
-                <div className="space-y-3">
+            <div className="bg-green-tea p-5 rounded-2xl shadow-card border-2 border-lime-glow">
+                <h3 className="font-bold text-emerald-pine mb-4">Expense Breakdown</h3>
+                <div className="space-y-3 text-emerald-pine">
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Fabric Costs</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.fabricCosts)}</span>
+                        <span className="text-sm text-emerald-pine/80">Fabric Costs</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.fabricCosts)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Stitching Costs</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.stitchingCosts)}</span>
+                        <span className="text-sm text-emerald-pine/80">Stitching Costs</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.stitchingCosts)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Shipping Costs</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.shippingCosts)}</span>
+                        <span className="text-sm text-emerald-pine/80">Shipping Costs</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.shippingCosts)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">COD Charges</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.codCharges)}</span>
+                        <span className="text-sm text-emerald-pine/80">COD Charges</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.codCharges)}</span>
                     </div>
-                    <div className="border-t pt-2 flex justify-between items-center">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">Total Expenses</span>
-                        <span className="text-sm font-bold text-red-600">{formatCurrency(metrics.totalCosts)}</span>
+                    <div className="border-t border-emerald-pine/30 pt-2 flex justify-between items-center">
+                        <span className="text-sm font-bold">Total Expenses</span>
+                        <span className="text-sm font-bold text-emerald-pine">{formatCurrency(metrics.totalCosts)}</span>
                     </div>
                 </div>
             </div>
 
             {/* Cash Flow */}
-            <div className="bg-white p-5 rounded-2xl shadow-card border dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Cash Flow Overview</h3>
+            <div className="bg-green-tea p-5 rounded-2xl shadow-card border-2 border-lime-glow">
+                <h3 className="font-bold text-emerald-pine mb-4">Cash Flow Overview</h3>
                 <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl">
-                        <span className="text-sm text-green-800">Prepaid Revenue</span>
-                        <span className="text-sm font-bold text-green-900">{formatCurrency(metrics.prepaidRevenue)}</span>
+                    <div className="flex justify-between items-center p-3 bg-emerald-pine/10 border border-lime-glow rounded-xl text-emerald-pine">
+                        <span className="text-sm">Prepaid Revenue</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.prepaidRevenue)}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-blue-50 rounded-xl">
-                        <span className="text-sm text-blue-800">COD Revenue</span>
-                        <span className="text-sm font-bold text-blue-900">{formatCurrency(metrics.codRevenue)}</span>
+                    <div className="flex justify-between items-center p-3 bg-emerald-pine/10 border border-lime-glow rounded-xl text-emerald-pine">
+                        <span className="text-sm">COD Revenue</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.codRevenue)}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-orange-50 rounded-xl">
-                        <span className="text-sm text-orange-800">Pending COD Collections</span>
-                        <span className="text-sm font-bold text-orange-900">{formatCurrency(metrics.codPending)}</span>
+                    <div className="flex justify-between items-center p-3 bg-emerald-pine/10 border border-lime-glow rounded-xl text-emerald-pine">
+                        <span className="text-sm">Pending COD Collections</span>
+                        <span className="text-sm font-bold">{formatCurrency(metrics.codPending)}</span>
                     </div>
                 </div>
             </div>
 
             {/* Inventory Value */}
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 rounded-2xl shadow-card text-white">
-                <h3 className="font-bold mb-2 flex items-center gap-2">
+            <div className="bg-gradient-to-br from-emerald-pine to-lime-glow p-5 rounded-2xl shadow-card text-emerald-pine">
+                <h3 className="font-bold mb-2 flex items-center gap-2 text-emerald-pine">
                     <Package className="w-5 h-5" />
                     Total Inventory Value
                 </h3>
-                <p className="text-3xl font-bold">{formatCurrency(metrics.totalInventoryValue)}</p>
-                <p className="text-xs opacity-80 mt-1">Current stock valuation</p>
+                <p className="text-3xl font-bold text-emerald-pine">{formatCurrency(metrics.totalInventoryValue)}</p>
+                <p className="text-xs text-emerald-pine/80 mt-1">Current stock valuation</p>
             </div>
 
             {/* Customer Metrics */}
-            <div className="bg-white p-5 rounded-2xl shadow-card border dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-brand" />
+            <div className="bg-green-tea p-5 rounded-2xl shadow-card border-2 border-lime-glow">
+                <h3 className="font-bold text-emerald-pine mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-emerald-pine" />
                     Customer Insights
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 text-emerald-pine">
                     <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Customers</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.totalCustomers}</p>
+                        <p className="text-xs text-emerald-pine/70 mb-1">Total Customers</p>
+                        <p className="text-2xl font-bold">{metrics.totalCustomers}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg Customer Value</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(metrics.avgCustomerValue)}</p>
+                        <p className="text-xs text-emerald-pine/70 mb-1">Avg Customer Value</p>
+                        <p className="text-2xl font-bold">{formatCurrency(metrics.avgCustomerValue)}</p>
                     </div>
                 </div>
             </div>
 
             {/* Customer Revenue Breakdown */}
-            <div className="bg-white p-5 rounded-2xl shadow-card border dark:border-gray-800">
+            <div className="bg-green-tea p-5 rounded-2xl shadow-card border-2 border-lime-glow">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Crown className="w-5 h-5 text-yellow-500" />
+                    <h3 className="font-bold text-emerald-pine flex items-center gap-2">
+                        <Crown className="w-5 h-5 text-lime-glow" />
                         Customer Revenue Breakdown
                     </h3>
                     {metrics.customerRevenueData.length > 10 && (
                         <button
                             onClick={() => setShowAllCustomers(!showAllCustomers)}
-                            className="text-xs text-brand hover:underline"
+                            className="text-xs text-emerald-pine underline-offset-2 hover:underline"
                         >
                             {showAllCustomers ? 'Show Top 10' : `Show All ${metrics.customerRevenueData.length}`}
                         </button>
@@ -378,29 +380,29 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
                 </div>
                 <div className="space-y-2">
                     {(showAllCustomers ? metrics.customerRevenueData : metrics.customerRevenueData.slice(0, 10)).map((customer, idx) => (
-                        <div key={idx} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-colors">
+                        <div key={idx} className="p-3 hover:bg-emerald-pine/5 rounded-lg transition-colors">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                            idx === 1 ? 'bg-gray-200 text-gray-700 dark:text-gray-300' :
-                                                idx === 2 ? 'bg-orange-100 text-orange-700' :
-                                                    'bg-blue-100 text-blue-600'
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-lime-glow text-emerald-pine' :
+                                        idx === 1 ? 'bg-emerald-pine/20 text-emerald-pine' :
+                                            idx === 2 ? 'bg-green-tea text-emerald-pine' :
+                                                'bg-emerald-pine/10 text-emerald-pine'
                                         }`}>
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{customer.name}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{customer.orders} orders • Avg: ₹{(customer.avgOrderValue / 1000).toFixed(1)}k</p>
+                                        <p className="text-sm font-bold text-emerald-pine truncate">{customer.name}</p>
+                                        <p className="text-xs text-emerald-pine/70">{customer.orders} orders • Avg: ₹{(customer.avgOrderValue / 1000).toFixed(1)}k</p>
                                     </div>
                                 </div>
                                 <div className="text-right ml-3">
-                                    <p className="text-sm font-bold text-brand">{formatCurrency(customer.revenue)}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">{((customer.revenue / metrics.totalRevenue) * 100).toFixed(1)}%</p>
+                                    <p className="text-sm font-bold text-emerald-pine">{formatCurrency(customer.revenue)}</p>
+                                    <p className="text-xs text-emerald-pine/70">{((customer.revenue / metrics.totalRevenue) * 100).toFixed(1)}%</p>
                                 </div>
                             </div>
-                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-emerald-pine/10 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-brand to-green-500 rounded-full transition-all"
+                                    className="h-full bg-gradient-to-r from-emerald-pine to-lime-glow rounded-full transition-all"
                                     style={{ width: `${customer.percentage}%` }}
                                 />
                             </div>
@@ -410,18 +412,18 @@ export default function FinancialInsights({ inventoryItems = [], allOrders = [] 
             </div>
 
             {/* Top 10 Products */}
-            <div className="bg-white p-5 rounded-2xl shadow-card border dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Top 10 Products by Revenue</h3>
+            <div className="bg-green-tea p-5 rounded-2xl shadow-card border-2 border-lime-glow">
+                <h3 className="font-bold text-emerald-pine mb-4">Top 10 Products by Revenue</h3>
                 <div className="space-y-2">
                     {metrics.topProducts.map(([name, revenue], idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 hover:bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div key={idx} className="flex items-center justify-between p-2 hover:bg-emerald-pine/5 rounded-lg">
                             <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-bold">
+                                <div className="w-6 h-6 rounded-full bg-lime-glow text-emerald-pine text-xs font-bold flex items-center justify-center border border-emerald-pine/30">
                                     {idx + 1}
                                 </div>
-                                <span className="text-sm text-gray-900 dark:text-white truncate">{name}</span>
+                                <span className="text-sm text-emerald-pine truncate">{name}</span>
                             </div>
-                            <span className="text-sm font-bold text-brand">{formatCurrency(revenue)}</span>
+                            <span className="text-sm font-bold text-emerald-pine">{formatCurrency(revenue)}</span>
                         </div>
                     ))}
                 </div>

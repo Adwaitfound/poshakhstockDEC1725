@@ -9,11 +9,9 @@ module.exports = {
                 sans: ['Montserrat', 'sans-serif'],
             },
             colors: {
-                'brand': '#16a34a',
-                'brand-dark': '#15803d',
-                'outfit': {
-                    600: '#9333ea',
-                }
+                'emerald-pine': '#084734',
+                'lime-glow': '#CEF17B',
+                'green-tea': '#CDEDB3',
             }
         },
     },

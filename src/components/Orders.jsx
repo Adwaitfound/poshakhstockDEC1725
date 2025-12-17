@@ -15,6 +15,7 @@ export default function Orders({
     onDeleteOrder,
     onOpenShipping,
     onCreateProductionBatch,
+    onReceiveBatch,
     onDataChanged
 }) {
     const [orderForm, setOrderForm] = useState({ orderNumber: '', fabricId: '', lengthToCut: '', outfitName: '', customerName: '', size: 'M', stitchingCost: '', acquisitionCost: '' })
@@ -164,7 +165,7 @@ export default function Orders({
         setIsUploading(true)
         try {
             const db = getDb()
-            
+
             // Update the production order with receivedBreakdown
             await updateDoc(doc(db, ORDERS_COLLECTION, orderId), {
                 status: 'Received from Tailor',
@@ -308,23 +309,23 @@ export default function Orders({
     return (
         <div className="space-y-6 fade-in">{/* Production Batches Section */}
             {onCreateProductionBatch && (
-                <div className="bg-white dark:bg-gray-950 p-5 rounded-3xl shadow-card border dark:border-gray-800 border dark:border-gray-800">
+                <div className="bg-emerald-pine/10 p-5 rounded-3xl shadow-card border-2 border-emerald-pine">
                     <div className="flex justify-between items-start mb-3">
                         <div
                             className="flex-1 cursor-pointer"
                             onClick={() => setExpandedSections(prev => ({ ...prev, batches: !prev.batches }))}
                         >
-                            <h3 className="text-lg font-bold flex items-center gap-2 text-gray-900
+                            <h3 className="text-lg font-bold flex items-center gap-2 text-lime-glow">
                                 <Package className="w-5 h-5" />
                                 Production Batches
                                 {expandedSections.batches ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </h3>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-1">Convert fabric to outfits</p>
+                            <p className="text-xs text-lime-glow/70 mt-1">Convert fabric to outfits</p>
                         </div>
                         {expandedSections.batches && (
                             <button
                                 onClick={onCreateProductionBatch}
-                                className="bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-green-700"
+                                className="bg-lime-glow text-emerald-pine px-4 py-2 rounded-xl font-bold text-sm hover:shadow-lg"
                             >
                                 + New Batch
                             </button>
@@ -334,14 +335,14 @@ export default function Orders({
                     {expandedSections.batches && (
                         <>
                             {lowStockOutfits.length > 0 && (
-                                <div className="bg-green-50 p-3 rounded-xl mb-3 border border-green-200
-                                    <div className="flex items-center gap-2 mb-2 text-green-800
+                                <div className="bg-green-tea/30 p-3 rounded-xl mb-3 border-2 border-lime-glow">
+                                    <div className="flex items-center gap-2 mb-2 text-lime-glow">
                                         <AlertCircle className="w-4 h-4" />
                                         <span className="text-xs font-bold">Low Stock Alert</span>
                                     </div>
                                     <div className="space-y-1">
                                         {lowStockOutfits.slice(0, 3).map((outfit, idx) => (
-                                            <div key={idx} className="flex justify-between text-xs text-gray-800
+                                            <div key={idx} className="flex justify-between text-xs text-lime-glow">
                                                 <span>{outfit.name}</span>
                                                 <span className="font-bold">{outfit.totalStock} left</span>
                                             </div>
@@ -352,29 +353,44 @@ export default function Orders({
 
                             {recentBatches.length > 0 ? (
                                 <div className="space-y-2">
-                                    <p className="text-xs opacity-80 mb-2">Recent Batches:</p>
+                                    <p className="text-xs opacity-80 text-lime-glow mb-2">Recent Batches:</p>
                                     {recentBatches.map((batch, idx) => (
-                                        <div key={idx} className="bg-white backdrop-blur-sm p-3 rounded-xl">
+                                        <div
+                                            key={idx}
+                                            onClick={() => onReceiveBatch && onReceiveBatch(batch)}
+                                            className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-lime-glow/30 cursor-pointer hover:bg-white/20 active:scale-[0.98] transition-all"
+                                        >
                                             <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-bold text-sm">{batch.outfitName}</p>
-                                                    <p className="text-xs opacity-80">{batch.totalPieces} pcs from {batch.fabricName}</p>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-sm text-lime-glow">{batch.outfitName}</p>
+                                                        {batch.status === 'Completed' ? (
+                                                            <span className="bg-lime-glow/20 text-lime-glow px-2 py-0.5 rounded text-[10px] font-bold border border-lime-glow/50">
+                                                                ✓ Received
+                                                            </span>
+                                                        ) : (
+                                                            <span className="bg-amber-600/80 text-white px-2 py-0.5 rounded text-[10px] font-bold border border-amber-500">
+                                                                Pending
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs opacity-80 text-lime-glow/70">{batch.totalReceivedPieces || batch.totalPieces} pcs from {batch.fabricName}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-xs font-bold">₹{(batch.totalCostPerPiece || 0).toFixed(0)}/pc</p>
-                                                    <p className="text-xs opacity-70">{formatDate(batch.receivedDate)}</p>
+                                                    <p className="text-xs font-bold text-lime-glow">₹{(batch.totalCostPerPiece || 0).toFixed(0)}/pc</p>
+                                                    <p className="text-xs opacity-70 text-lime-glow/70">{formatDate(batch.receivedDate || batch.createdAt)}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-6 bg-white backdrop-blur-sm rounded-xl">
-                                    <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm opacity-80">No production batches yet</p>
+                                <div className="text-center py-6 bg-white/10 backdrop-blur-sm rounded-xl">
+                                    <Package className="w-8 h-8 mx-auto mb-2 opacity-50 text-lime-glow" />
+                                    <p className="text-sm opacity-80 text-lime-glow">No production batches yet</p>
                                     <button
                                         onClick={onCreateProductionBatch}
-                                        className="mt-3 bg-white text-purple-600 px-4 py-2 rounded-xl font-bold text-xs"
+                                        className="mt-3 bg-lime-glow text-emerald-pine px-4 py-2 rounded-xl font-bold text-xs"
                                     >
                                         Create First Batch
                                     </button>
@@ -386,7 +402,7 @@ export default function Orders({
             )}
 
             {/* Ready Stock Orders */}
-            <div className="bg-green-600 p-5 rounded-3xl shadow-card text-white">
+            <div className="bg-emerald-pine p-5 rounded-3xl shadow-card text-white">
                 <div
                     className="cursor-pointer mb-3"
                     onClick={() => setExpandedSections(prev => ({ ...prev, stock: !prev.stock }))}
@@ -405,7 +421,7 @@ export default function Orders({
                             <div>
                                 <label className="text-xs font-bold opacity-90">Order Number *</label>
                                 <input
-                                    className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                    className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                     value={stockOrderForm.orderNumber}
                                     onChange={e => setStockOrderForm({ ...stockOrderForm, orderNumber: e.target.value })}
                                     placeholder="e.g., 1001"
@@ -415,7 +431,7 @@ export default function Orders({
                             <div>
                                 <label className="text-xs font-bold opacity-90">Select Outfit *</label>
                                 <select
-                                    className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                    className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                     value={stockOrderForm.outfitId}
                                     onChange={e => setStockOrderForm({ ...stockOrderForm, outfitId: e.target.value })}
                                     required
@@ -451,7 +467,7 @@ export default function Orders({
                             <div>
                                 <label className="text-xs font-bold opacity-90">Size *</label>
                                 <select
-                                    className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                    className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                     value={stockOrderForm.size}
                                     onChange={e => setStockOrderForm({ ...stockOrderForm, size: e.target.value })}
                                     required
@@ -468,7 +484,7 @@ export default function Orders({
                                 <input
                                     type="number"
                                     min="1"
-                                    className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                    className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                     value={stockOrderForm.quantity}
                                     onChange={e => setStockOrderForm({ ...stockOrderForm, quantity: e.target.value })}
                                     placeholder="1"
@@ -480,7 +496,7 @@ export default function Orders({
                         <div>
                             <label className="text-xs font-bold opacity-90">Customer Name</label>
                             <input
-                                className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                 value={stockOrderForm.customerName}
                                 onChange={e => setStockOrderForm({ ...stockOrderForm, customerName: e.target.value })}
                                 placeholder="Customer name"
@@ -491,7 +507,7 @@ export default function Orders({
                             <div>
                                 <label className="text-xs font-bold opacity-90">Phone</label>
                                 <input
-                                    className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                    className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                     value={stockOrderForm.phone}
                                     onChange={e => setStockOrderForm({ ...stockOrderForm, phone: e.target.value })}
                                     placeholder="Phone number"
@@ -500,7 +516,7 @@ export default function Orders({
                             <div>
                                 <label className="text-xs font-bold opacity-90">Address</label>
                                 <input
-                                    className="w-full p-2.5 rounded-xl mt-1 text-gray-900 dark:text-white text-sm"
+                                    className="w-full p-2.5 rounded-xl mt-1 bg-white text-emerald-pine text-sm border-2 border-lime-glow font-semibold"
                                     value={stockOrderForm.address}
                                     onChange={e => setStockOrderForm({ ...stockOrderForm, address: e.target.value })}
                                     placeholder="Delivery address"
@@ -511,7 +527,7 @@ export default function Orders({
                         <button
                             type="submit"
                             disabled={isUploading || !stockOrderForm.outfitId}
-                            className="w-full bg-white text-green-600 font-bold py-3 rounded-xl hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-green-tea text-emerald-pine font-bold py-3 rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isUploading ? 'Creating Order...' : 'Create Order'}
                         </button>
@@ -533,7 +549,7 @@ export default function Orders({
                         className="flex-1 cursor-pointer"
                         onClick={() => setExpandedSections(prev => ({ ...prev, production: !prev.production }))}
                     >
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-black flex items-center gap-2">
                             <Scissors className="w-5 h-5 text-brand" /> Production Queue
                             {expandedSections.production ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                         </h3>
@@ -550,12 +566,12 @@ export default function Orders({
                         <form onSubmit={handleAddToQueue} className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Order #</label>
-                                    <input className="w-full p-2 bg-gray-50 dark:bg-gray-900 rounded-xl mt-1 border-none text-sm" value={orderForm.orderNumber} onChange={e => setOrderForm({ ...orderForm, orderNumber: e.target.value })} placeholder="101" />
+                                    <label className="text-xs font-bold text-emerald-pine uppercase">Order #</label>
+                                    <input className="w-full p-2 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm placeholder-gray-400" value={orderForm.orderNumber} onChange={e => setOrderForm({ ...orderForm, orderNumber: e.target.value })} placeholder="101" />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Select Fabric</label>
-                                    <select className="w-full p-2 bg-gray-50 dark:bg-gray-900 rounded-xl mt-1 border-none text-sm" value={orderForm.fabricId} onChange={e => setOrderForm({ ...orderForm, fabricId: e.target.value })}>
+                                    <label className="text-xs font-bold text-emerald-pine uppercase">Select Fabric</label>
+                                    <select className="w-full p-2 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm appearance-none cursor-pointer" value={orderForm.fabricId} onChange={e => setOrderForm({ ...orderForm, fabricId: e.target.value })}>
                                         <option value="">-- Choose --</option>
                                         {fabricOptions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                                     </select>
@@ -564,39 +580,39 @@ export default function Orders({
 
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Cut Amt</label>
-                                    <input type="number" step="0.1" className="w-full p-2 bg-gray-50 dark:bg-gray-900 rounded-xl mt-1 border-none text-sm" value={orderForm.lengthToCut} onChange={e => setOrderForm({ ...orderForm, lengthToCut: e.target.value })} placeholder="0.0" />
+                                    <label className="text-xs font-bold text-emerald-pine uppercase">Cut Amt</label>
+                                    <input type="number" step="0.1" className="w-full p-2 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm placeholder-gray-400" value={orderForm.lengthToCut} onChange={e => setOrderForm({ ...orderForm, lengthToCut: e.target.value })} placeholder="0.0" />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Stitching ₹</label>
-                                    <input type="number" className="w-full p-2 bg-gray-50 dark:bg-gray-900 rounded-xl mt-1 border-none text-sm" value={orderForm.stitchingCost} onChange={e => setOrderForm({ ...orderForm, stitchingCost: e.target.value })} placeholder="0.00" />
+                                    <label className="text-xs font-bold text-emerald-pine uppercase">Stitching ₹</label>
+                                    <input type="number" className="w-full p-2 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm placeholder-gray-400" value={orderForm.stitchingCost} onChange={e => setOrderForm({ ...orderForm, stitchingCost: e.target.value })} placeholder="0.00" />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Acq. Cost ₹</label>
-                                    <input type="number" className="w-full p-2 bg-gray-50 dark:bg-gray-900 rounded-xl mt-1 border-none text-sm" value={orderForm.acquisitionCost} onChange={e => setOrderForm({ ...orderForm, acquisitionCost: e.target.value })} placeholder="0.00" />
+                                    <label className="text-xs font-bold text-emerald-pine uppercase">Acq. Cost ₹</label>
+                                    <input type="number" className="w-full p-2 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm placeholder-gray-400" value={orderForm.acquisitionCost} onChange={e => setOrderForm({ ...orderForm, acquisitionCost: e.target.value })} placeholder="0.00" />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Target Outfit</label>
-                                <input list="outfit-suggestions" className="w-full p-2 bg-gray-50 dark:bg-gray-900 rounded-xl mt-1 border-none text-sm" value={orderForm.outfitName} onChange={e => setOrderForm({ ...orderForm, outfitName: e.target.value })} placeholder="e.g. Mirae" />
+                                <label className="text-xs font-bold text-emerald-pine uppercase">Target Outfit</label>
+                                <input list="outfit-suggestions" className="w-full p-2 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm placeholder-gray-400" value={orderForm.outfitName} onChange={e => setOrderForm({ ...orderForm, outfitName: e.target.value })} placeholder="e.g. Mirae" />
                                 <datalist id="outfit-suggestions">
                                     {outfitOptions.map(o => <option key={o.id} value={o.name} />)}
                                 </datalist>
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase block mb-1">Target Size</label>
-                                <div className="flex bg-gray-50 dark:bg-gray-900 p-1 rounded-xl gap-1 overflow-x-auto no-scrollbar">
+                                <label className="text-xs font-bold text-emerald-pine uppercase block mb-1">Target Size</label>
+                                <div className="flex bg-emerald-pine/10 p-1 rounded-xl gap-1 overflow-x-auto no-scrollbar border-2 border-lime-glow">
                                     {['S', 'M', 'L', 'XL', 'XXL', 'Custom'].map(s => (
-                                        <button key={s} type="button" onClick={() => setOrderForm({ ...orderForm, size: s })} className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${orderForm.size === s ? 'bg-brand text-white shadow' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-200'}`}>
+                                        <button key={s} type="button" onClick={() => setOrderForm({ ...orderForm, size: s })} className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${orderForm.size === s ? 'bg-lime-glow text-emerald-pine shadow-md' : 'text-lime-glow hover:bg-lime-glow/20'}`}>
                                             {s}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            <button type="submit" className="w-full bg-gray-800 text-white py-2 rounded-xl font-bold text-sm hover:bg-gray-700">+ Add to Queue</button>
+                            <button type="submit" className="w-full bg-lime-glow text-emerald-pine py-2 rounded-xl font-bold text-sm hover:shadow-lg">+ Add to Queue</button>
                         </form>
 
                         {productionQueue.length > 0 && (
@@ -619,7 +635,7 @@ export default function Orders({
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={handleBatchSubmit} disabled={isUploading} className="w-full bg-brand text-white py-3 rounded-xl font-bold text-sm shadow-md">
+                                <button onClick={handleBatchSubmit} disabled={isUploading} className="w-full bg-lime-glow text-emerald-pine py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-lg">
                                     {isUploading ? 'Processing...' : 'Submit Batch to Production'}
                                 </button>
                             </div>
@@ -631,15 +647,15 @@ export default function Orders({
             {/* Order List */}
             <div>
                 <div className="flex justify-between items-end mb-3">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Clipboard className="w-5 h-5 text-accent" /> Order History
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Clipboard className="w-5 h-5 text-lime-glow" /> Order History
                     </h3>
                     <div className="flex gap-2">
-                        <select className="text-xs bg-white border border-gray-200 dark:border-gray-700 rounded-lg p-1 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400" value={orderSort} onChange={e => setOrderSort(e.target.value)}>
+                        <select className="text-xs bg-white border-2 border-lime-glow rounded-xl px-3 py-2 text-emerald-pine font-semibold shadow-md hover:shadow-lg" value={orderSort} onChange={e => setOrderSort(e.target.value)}>
                             <option value="date_desc">Newest</option>
                             <option value="date_asc">Oldest</option>
                         </select>
-                        <select className="text-xs bg-white border border-gray-200 dark:border-gray-700 rounded-lg p-1 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400" value={orderFilterStatus} onChange={e => setOrderFilterStatus(e.target.value)}>
+                        <select className="text-xs bg-white border-2 border-lime-glow rounded-xl px-3 py-2 text-emerald-pine font-semibold shadow-md hover:shadow-lg" value={orderFilterStatus} onChange={e => setOrderFilterStatus(e.target.value)}>
                             <option value="active">Active Only</option>
                             <option value="completed">Completed/Cancelled</option>
                         </select>
@@ -647,61 +663,65 @@ export default function Orders({
                 </div>
                 <div className="space-y-3">
                     {filteredOrders.map(order => (
-                        <div key={order.id} onClick={() => onViewOrder && onViewOrder(order)} className={`bg-white p-4 rounded-2xl shadow-card flex flex-col gap-3 relative cursor-pointer active:scale-95 transition-transform ${order.status === 'Cancelled' ? 'opacity-60 grayscale' : ''}`}>
+                        <div key={order.id} onClick={() => onViewOrder && onViewOrder(order)} className={`bg-emerald-pine/20 border-2 border-lime-glow/40 p-4 rounded-2xl shadow-card flex flex-col gap-3 relative cursor-pointer hover:border-lime-glow/60 active:scale-95 transition-all ${order.status === 'Cancelled' ? 'opacity-60 grayscale' : ''}`}>
                             {order.status !== 'Cancelled' && order.status !== 'Order Shipped (Completed)' && (
-                                <button onClick={(e) => { e.stopPropagation(); onCancelOrder && onCancelOrder(order) }} className="absolute top-3 right-3 text-gray-300 hover:text-red-500">
+                                <button onClick={(e) => { e.stopPropagation(); onCancelOrder && onCancelOrder(order) }} className="absolute top-3 right-3 text-white/40 hover:text-red-500">
                                     <X className="w-5 h-5" />
                                 </button>
                             )}
                             {(order.status === 'Cancelled' || order.status === 'Order Shipped (Completed)') && (
-                                <button onClick={(e) => { e.stopPropagation(); onDeleteOrder && onDeleteOrder(order.id) }} className="absolute bottom-3 right-3 text-gray-300 hover:text-red-500 z-10">
+                                <button onClick={(e) => {
+                                    e.stopPropagation();
+                                    console.log('Delete button clicked for order:', order.id);
+                                    onDeleteOrder && onDeleteOrder(order.id);
+                                }} className="absolute bottom-3 right-3 text-white/40 hover:text-red-500 z-10 p-2">
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                             )}
                             <div className="flex gap-3">
-                                <img src={order.imageUrl} className="w-14 h-14 rounded-xl bg-gray-100 object-cover" />
+                                <img src={order.imageUrl} className="w-14 h-14 rounded-xl bg-gray-800 object-cover" />
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-mono text-brand font-bold text-sm">#{order.orderNumber}</span>
+                                        <span className="font-mono text-lime-glow font-bold text-sm">#{order.orderNumber}</span>
                                         {order.orderType === 'stock' && (
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-700">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-lime-glow/20 text-lime-glow border border-lime-glow/50">
                                                 STOCK
                                             </span>
                                         )}
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${order.status === 'Sent to Tailor' ? 'bg-yellow-100 text-yellow-700' : order.status === 'Ready to Ship' ? 'bg-blue-100 text-blue-700' : order.status.includes('Shipped') ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${order.status === 'Sent to Tailor' ? 'bg-amber-600/80 text-white border-amber-500' : order.status === 'Ready to Ship' ? 'bg-emerald-700/80 text-white border-emerald-600' : order.status.includes('Shipped') ? 'bg-lime-glow/20 text-lime-glow border-lime-glow/50' : 'bg-gray-700 text-white border-gray-600'}`}>
                                             {order.status}
                                         </span>
                                     </div>
-                                    <h4 className="font-bold text-gray-800 dark:text-white text-sm">
+                                    <h4 className="font-bold text-white text-sm">
                                         {order.outfitName || 'Unspecified'}
-                                        <span className="text-xs bg-gray-100 px-1 rounded ml-1 text-gray-600
+                                        <span className="text-xs bg-emerald-pine/60 border border-lime-glow/40 px-1 rounded ml-1 text-lime-glow">
                                             {order.quantity ? `${order.quantity}x ` : ''}Size {order.size}
                                         </span>
                                     </h4>
                                     {order.orderType === 'stock' ? (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 ₹{(order.productionCostPerPiece || 0).toFixed(2)}/pc</p>
+                                        <p className="text-xs text-lime-glow">₹{(order.productionCostPerPiece || 0).toFixed(2)}/pc</p>
                                     ) : (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 Cost: ₹{order.stitchingCost || 0}</p>
+                                        <p className="text-xs text-lime-glow">Cost: ₹{order.stitchingCost || 0}</p>
                                     )}
                                 </div>
                             </div>
                             {order.status !== 'Cancelled' && (
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-xl flex justify-between items-center mt-1">
+                                <div className="bg-emerald-pine/40 border border-lime-glow/30 p-2 rounded-xl flex justify-between items-center mt-1">
                                     {order.status === 'Sent to Tailor' ? (
-                                        <button onClick={(e) => { e.stopPropagation(); handleQuickReceive(order.id) }} className="text-xs font-bold text-brand hover:underline">
+                                        <button onClick={(e) => { e.stopPropagation(); handleQuickReceive(order.id) }} className="text-xs font-bold text-lime-glow hover:underline">
                                             Mark Received
                                         </button>
                                     ) : order.status === 'Received from Tailor' || order.status === 'Ready to Ship' ? (
-                                        <button onClick={(e) => { e.stopPropagation(); onOpenShipping && onOpenShipping(order.id) }} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+                                        <button onClick={(e) => { e.stopPropagation(); onOpenShipping && onOpenShipping(order.id) }} className="text-xs font-bold text-lime-glow hover:underline flex items-center gap-1">
                                             <Truck className="w-3 h-3" /> Ship It
                                         </button>
                                     ) : (
-                                        <span className="text-[10px] text-green-600 font-bold">Done</span>
+                                        <span className="text-[10px] text-lime-glow font-bold">Done</span>
                                     )}
                                 </div>
                             )}
                             {(order.customerName || order.phone || order.address) && (
-                                <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 border-t pt-1">
+                                <div className="text-[10px] text-white/80 mt-1 border-t border-lime-glow/30 pt-1">
                                     {order.customerName} {order.phone && `• ${order.phone}`} {order.address && `• ${order.address}`}
                                 </div>
                             )}

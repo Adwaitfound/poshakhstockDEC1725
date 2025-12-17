@@ -1,8 +1,30 @@
 import React, { useMemo, useState } from 'react'
-import { Search, Users, Trash2 } from 'lucide-react'
+import { Search, Users, Trash2, Plus } from 'lucide-react'
 
-export default function Customers({ allOrders = [], onViewCustomer = () => { }, onDeleteCustomer = () => { }, searchTerm = '', setSearchTerm = () => { } }) {
+export default function Customers({ allOrders = [], onViewCustomer = () => { }, onDeleteCustomer = () => { }, onAddCustomer = () => { }, searchTerm = '', setSearchTerm = () => { } }) {
     const [deleteConfirm, setDeleteConfirm] = useState(null)
+    const [showAddModal, setShowAddModal] = useState(false)
+    const [newCustomer, setNewCustomer] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
+        city: '',
+        state: '',
+        source: 'Manual'
+    })
+
+    const resetNewCustomer = () => setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', state: '', source: 'Manual' })
+
+    const handleAddCustomer = () => {
+        if (!newCustomer.name.trim()) {
+            alert('Name is required')
+            return
+        }
+        onAddCustomer(newCustomer)
+        resetNewCustomer()
+        setShowAddModal(false)
+    }
     const cleanNumber = (val) => {
         if (typeof val === 'number') return val
         if (!val) return 0
@@ -55,39 +77,48 @@ export default function Customers({ allOrders = [], onViewCustomer = () => { }, 
 
     return (
         <div className="space-y-6 fade-in">
-            <div className="flex justify-between items-center mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">Customers</h2>
-                <div className="text-xs text-gray-500 font-medium bg-white px-3 py-1 rounded-full shadow-sm">{customerList.length} Total</div>
+            <div className="flex justify-between items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold text-lime-glow">Customers</h2>
+                <div className="flex items-center gap-3">
+                    <div className="text-xs text-emerald-pine font-bold bg-lime-glow px-3 py-1 rounded-full shadow-sm border border-emerald-pine/30">{customerList.length} Total</div>
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-pine text-lime-glow rounded-xl text-sm font-bold shadow-sm hover:shadow-md border border-lime-glow"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Customer
+                    </button>
+                </div>
             </div>
 
             <div className="relative mb-4">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-emerald-pine">
                     <Search className="w-5 h-5" />
                 </span>
-                <input className="w-full pl-10 p-3 bg-white rounded-xl border-none shadow-sm text-sm" placeholder="Search customers..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                <input className="w-full pl-10 p-3 bg-white text-black rounded-xl border-2 border-lime-glow shadow-sm text-sm placeholder-gray-400" placeholder="Search customers..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-1 gap-3">
                 {customerList.map((customer, idx) => {
                     const stats = getCustomerStats(customer.name)
                     return (
-                        <div key={idx} className="bg-white p-4 rounded-2xl shadow-card flex items-center justify-between">
+                        <div key={idx} className="bg-green-tea p-4 rounded-2xl shadow-card flex items-center justify-between border border-lime-glow/60">
                             <div onClick={() => onViewCustomer(customer)} className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80">
-                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                <div className="h-10 w-10 rounded-full bg-emerald-pine/10 border border-lime-glow flex items-center justify-center text-emerald-pine font-bold text-sm">
                                     {customer.name.substring(0, 2).toUpperCase()}
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-gray-900 text-sm">{customer.name}</h4>
-                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                    <h4 className="font-bold text-emerald-pine text-sm">{customer.name}</h4>
+                                    <div className="flex items-center gap-2 text-[10px] text-emerald-pine/70">
                                         {customer.phone && <span>📞 {customer.phone}</span>}
-                                        {customer.source === 'Saved' && <span className="bg-green-50 text-green-600 px-1 rounded">Imported</span>}
+                                        {customer.source === 'Saved' && <span className="bg-lime-glow text-emerald-pine px-1 rounded border border-emerald-pine/40">Imported</span>}
                                     </div>
                                 </div>
                             </div>
                             <div className="text-right flex items-center gap-3">
                                 <div>
-                                    <p className="text-lg font-bold text-gray-900">{stats.totalItems}</p>
-                                    <p className="text-[10px] text-gray-400 uppercase">Orders</p>
+                                    <p className="text-lg font-bold text-emerald-pine">{stats.totalItems}</p>
+                                    <p className="text-[10px] text-emerald-pine/60 uppercase">Orders</p>
                                 </div>
                                 <button
                                     onClick={(e) => {
@@ -104,8 +135,8 @@ export default function Customers({ allOrders = [], onViewCustomer = () => { }, 
                     )
                 })}
                 {customerList.length === 0 && (
-                    <div className="text-center py-10 text-gray-400">
-                        <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <div className="text-center py-10 text-emerald-pine/70">
+                        <Users className="w-12 h-12 mx-auto mb-2 opacity-20 text-emerald-pine" />
                         <p>No customers found.</p>
                     </div>
                 )}
@@ -134,6 +165,88 @@ export default function Customers({ allOrders = [], onViewCustomer = () => { }, 
                                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
                             >
                                 Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Customer Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddModal(false)}>
+                    <div className="bg-green-tea rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl border-2 border-lime-glow" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-emerald-pine">Add Customer</h3>
+                            <button onClick={() => setShowAddModal(false)} className="text-emerald-pine/60 hover:text-emerald-pine font-bold">✕</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                                <label className="text-xs font-bold text-emerald-pine uppercase">Name *</label>
+                                <input
+                                    className="w-full p-3 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm"
+                                    value={newCustomer.name}
+                                    onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                                    placeholder="Customer name"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-emerald-pine uppercase">Phone</label>
+                                <input
+                                    className="w-full p-3 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm"
+                                    value={newCustomer.phone}
+                                    onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                    placeholder="Phone"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-emerald-pine uppercase">Email</label>
+                                <input
+                                    className="w-full p-3 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm"
+                                    value={newCustomer.email}
+                                    onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                                    placeholder="Email"
+                                />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs font-bold text-emerald-pine uppercase">Address</label>
+                                <input
+                                    className="w-full p-3 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm"
+                                    value={newCustomer.address}
+                                    onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                                    placeholder="Street address"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-emerald-pine uppercase">City</label>
+                                <input
+                                    className="w-full p-3 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm"
+                                    value={newCustomer.city}
+                                    onChange={e => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                                    placeholder="City"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-emerald-pine uppercase">State</label>
+                                <input
+                                    className="w-full p-3 bg-white text-black rounded-xl mt-1 border-2 border-lime-glow font-semibold text-sm"
+                                    value={newCustomer.state}
+                                    onChange={e => setNewCustomer({ ...newCustomer, state: e.target.value })}
+                                    placeholder="State"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-3 mt-5">
+                            <button
+                                onClick={() => { resetNewCustomer(); setShowAddModal(false) }}
+                                className="flex-1 px-4 py-3 border-2 border-lime-glow text-emerald-pine font-bold rounded-xl"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAddCustomer}
+                                className="flex-1 px-4 py-3 bg-emerald-pine text-lime-glow font-bold rounded-xl shadow-sm hover:shadow-md"
+                            >
+                                Save Customer
                             </button>
                         </div>
                     </div>

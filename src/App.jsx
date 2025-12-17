@@ -8,6 +8,7 @@ import Outfits from './components/Outfits'
 import Customers from './components/Customers'
 import FinancialInsights from './components/FinancialInsights'
 import ProductionModal from './components/ProductionModal'
+import ReceiveProductionModal from './components/ReceiveProductionModal'
 import { AuthProvider, useAuth } from './context/AuthProvider'
 import { initFirebase, subscribeCollection, anonymousSignIn } from './firebase'
 import InventoryDetailModal from './components/InventoryDetailModal'
@@ -72,7 +73,7 @@ function LoginForm({ login }) {
                 <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Your Name</label>
                 <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-600 focus:outline-none transition"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-emerald-pine focus:ring-2 focus:ring-emerald-pine/20 focus:outline-none transition"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     required
@@ -82,7 +83,7 @@ function LoginForm({ login }) {
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-lime-glow to-green-tea text-emerald-pine font-bold py-3 rounded-2xl hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
                 {loading ? 'Please wait...' : 'Sign In'}
             </button>
@@ -98,11 +99,13 @@ function InnerApp() {
     const [allOrders, setAllOrders] = useState([])
     const [productionBatches, setProductionBatches] = useState([])
     const [showProductionModal, setShowProductionModal] = useState(false)
+    const [receiveBatch, setReceiveBatch] = useState(null)
     // Modal & UI state
     const [viewInventoryItem, setViewInventoryItem] = useState(null)
     const [viewOrder, setViewOrder] = useState(null)
     const [viewCustomer, setViewCustomer] = useState(null)
     const [showLegacyModal, setShowLegacyModal] = useState(false)
+    const [editOrder, setEditOrder] = useState(null)
     const [legacyForm, setLegacyForm] = useState({ orderNumber: '', customerName: '', outfitName: '', size: 'M', fabricId: '', status: 'Sent to Tailor', sellingPrice: '', deductStock: false, cutAmount: '', notes: '', phone: '', address: '', discount: '', source: '', acquisitionCost: '', paymentMethod: 'Prepaid', city: '', state: '', codCharge: '', shippingCost: '', codRemittanceDate: '' })
     const [stockAdjustItem, setStockAdjustItem] = useState(null)
     const [stockAdjustType, setStockAdjustType] = useState(null)
@@ -110,6 +113,7 @@ function InnerApp() {
     const [deleteOrderTargetId, setDeleteOrderTargetId] = useState(null)
     const [deletePassword, setDeletePassword] = useState('')
     const [shippingOrderId, setShippingOrderId] = useState(null)
+    const [customerSearch, setCustomerSearch] = useState('')
     const [shippingForm, setShippingForm] = useState({ sellingPrice: '', shippingCost: '', otherExpenses: '' })
     const [selectedImageUrl, setSelectedImageUrl] = useState(null)
     const [isUploading, setIsUploading] = useState(false)
@@ -180,11 +184,57 @@ function InnerApp() {
     const loadOrders = async () => {
         try {
             const snap = await getDocs(collection(db, 'production_orders'))
-            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o && o.orderNumber)
+            // keep rows that have either an orderNumber (orders) or a customerName (manual customers)
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o && (o.orderNumber || o.customerName))
             setAllOrders(list)
             console.log('Loaded', list.length, 'orders')
         } catch (error) {
             console.error('Error loading orders:', error)
+        }
+    }
+
+    const handleAddCustomer = async (customer) => {
+        if (!db) return
+        const payload = {
+            customerName: customer.name,
+            phone: customer.phone || '',
+            address: customer.address || '',
+            email: customer.email || '',
+            city: customer.city || '',
+            state: customer.state || '',
+            status: 'Saved',
+            orderTotal: 0,
+            finalSellingPrice: 0,
+            paymentMode: 'Prepaid',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            source: customer.source || 'Manual Customer',
+            importedData: {
+                'Customer Email': customer.email || '',
+                Address: customer.address || '',
+                City: customer.city || '',
+                State: customer.state || ''
+            }
+        }
+        try {
+            const ref = await addDoc(collection(db, ORDERS_COLLECTION), payload)
+            setAllOrders(prev => [{ id: ref.id, ...payload, createdAt: new Date(), updatedAt: new Date() }, ...prev])
+        } catch (err) {
+            console.error('Error adding customer', err)
+            alert('Could not add customer: ' + err.message)
+        }
+    }
+
+    const handleDeleteCustomer = async (customerName) => {
+        if (!db || !customerName) return
+        try {
+            const qDelete = query(collection(db, ORDERS_COLLECTION), where('customerName', '==', customerName))
+            const snap = await getDocs(qDelete)
+            await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
+            setAllOrders(prev => prev.filter(o => (o.customerName || '').toLowerCase().trim() !== customerName.toLowerCase().trim()))
+        } catch (err) {
+            console.error('Error deleting customer', err)
+            alert('Could not delete customer: ' + err.message)
         }
     }
 
@@ -273,10 +323,13 @@ function InnerApp() {
 
     if (!userProfile) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
-                <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-pine via-emerald-800 to-emerald-900 p-4">
+                <div className="w-full max-w-sm bg-gray-900 rounded-3xl shadow-2xl p-8">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-extrabold text-green-600 mb-2">Poshakh Manager</h1>
+                        <div className="w-20 h-20 bg-gradient-to-br from-lime-glow to-green-tea rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+                            <svg className="w-12 h-12 text-emerald-pine" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-emerald-pine mb-2">Poshakh Manager</h1>
                         <p className="text-gray-500 text-sm">Stock & Production Tracking</p>
                     </div>
                     <LoginForm login={login} />
@@ -296,21 +349,23 @@ function InnerApp() {
     ]
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24">
+        <div className="min-h-screen bg-black pb-24">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+            <header className="bg-gradient-to-r from-emerald-pine to-emerald-800 border-b border-emerald-900 sticky top-0 z-40 shadow-lg">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-lime-glow to-green-tea flex items-center justify-center">
+                            <svg className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-pine" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                        </div>
                         <div>
-                            <h1 className="text-base sm:text-lg font-bold text-gray-900">Poshakh Manager</h1>
-                            <p className="text-[10px] sm:text-xs text-gray-500">Connected</p>
+                            <h1 className="text-base sm:text-lg font-bold text-white">Poshakh Manager</h1>
+                            <p className="text-[10px] sm:text-xs text-emerald-100">Connected</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-4">
                         <button
                             onClick={refreshAllData}
-                            className="h-9 w-9 sm:h-10 sm:w-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center hover:bg-blue-200 active:bg-blue-200"
+                            className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-600 text-lime-glow rounded-2xl flex items-center justify-center hover:bg-emerald-500 active:scale-95 transition-all shadow-lg"
                             title="Refresh Data"
                         >
                             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,7 +373,7 @@ function InnerApp() {
                             </svg>
                         </button>
                         {userProfile?.role === 'admin' && (
-                            <button onClick={() => setActiveTab('import')} className="h-9 w-9 sm:h-10 sm:w-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center hover:bg-green-200 active:bg-green-200" title="Import">
+                            <button onClick={() => setActiveTab('import')} className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-600 text-lime-glow rounded-2xl flex items-center justify-center hover:bg-emerald-500 active:scale-95 transition-all shadow-lg" title="Import">
                                 <Icons.Table className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                         )}
@@ -341,29 +396,39 @@ function InnerApp() {
             <main className="px-4 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto pb-24">
                 {activeTab === 'home' && <Dashboard allOrders={allOrders} inventoryItems={inventoryItems} userRole={userProfile?.role} />}
                 {activeTab === 'inventory' && <Inventory onViewItem={(it) => setViewInventoryItem(it)} inventoryItems={inventoryItems} soldCounts={{}} onAddClick={() => setActiveTab('add')} userRole={userProfile?.role} />}
-                {activeTab === 'orders' && <Orders allOrders={allOrders} inventoryItems={inventoryItems} productionBatches={productionBatches} onViewOrder={(o) => setViewOrder(o)} onShowLegacyModal={() => setShowLegacyModal(true)} onCancelOrder={handleCancelOrder} onDeleteOrder={(id) => setDeleteOrderTargetId(id)} onOpenShipping={(id) => setShippingOrderId(id)} onCreateProductionBatch={() => setShowProductionModal(true)} userRole={userProfile?.role} onDataChanged={refreshAllData} />}
+                {activeTab === 'orders' && <Orders allOrders={allOrders} inventoryItems={inventoryItems} productionBatches={productionBatches} onViewOrder={(o) => setViewOrder(o)} onShowLegacyModal={() => setShowLegacyModal(true)} onCancelOrder={handleCancelOrder} onDeleteOrder={(id) => { console.log('onDeleteOrder called with id:', id); setDeleteOrderTargetId(id); }} onOpenShipping={(id) => setShippingOrderId(id)} onCreateProductionBatch={() => setShowProductionModal(true)} onReceiveBatch={(batch) => setReceiveBatch(batch)} userProfile={userProfile} onDataChanged={refreshAllData} />}
                 {activeTab === 'outfits' && <Outfits allOrders={allOrders} inventoryItems={inventoryItems} />}
-                {activeTab === 'customers' && <Customers allOrders={allOrders} onViewCustomer={(c) => setViewCustomer(c)} searchTerm={''} setSearchTerm={() => { }} />}
+                {activeTab === 'customers' && (
+                    <Customers
+                        allOrders={allOrders}
+                        onViewCustomer={(c) => setViewCustomer(c)}
+                        searchTerm={customerSearch}
+                        setSearchTerm={setCustomerSearch}
+                        onAddCustomer={handleAddCustomer}
+                        onDeleteCustomer={handleDeleteCustomer}
+                    />
+                )}
                 {activeTab === 'financial' && <FinancialInsights inventoryItems={inventoryItems} allOrders={allOrders} userRole={userProfile?.role} />}
                 {activeTab === 'add' && <AddItem onSuccess={() => setActiveTab('inventory')} onDataChanged={refreshAllData} />}
                 {activeTab === 'import' && userProfile?.role === 'admin' && <SheetImport />}
 
                 {/* Modals wired to state and handlers */}
                 <InventoryDetailModal item={viewInventoryItem} onClose={() => setViewInventoryItem(null)} onOpenEdit={openEditModal} onOpenStock={openStockModal} onViewHistory={(it) => { setViewInventoryItem(null); setHistoryItemId(it.id); }} onDelete={handleDeleteItem} />
-                <OrderDetailModal order={viewOrder} onClose={() => setViewOrder(null)} onEdit={(o) => { setViewOrder(null); setShowLegacyModal(true); setLegacyForm({ orderNumber: o.orderNumber, customerName: o.customerName, outfitName: o.outfitName, size: o.size, fabricId: o.fabricId || '' }) }} onShip={(o) => { setShippingOrderId(o.id); }} />
+                <OrderDetailModal order={viewOrder} onClose={() => setViewOrder(null)} onEdit={(o) => { setViewOrder(null); setEditOrder(o); setShowLegacyModal(true); }} onShip={(o) => { setShippingOrderId(o.id); }} />
                 <CustomerDetailModal customer={viewCustomer} onClose={() => setViewCustomer(null)} allOrders={allOrders} inventoryItems={inventoryItems} userRole={userProfile?.role} />
-                <LegacyOrderModal visible={showLegacyModal} onClose={() => setShowLegacyModal(false)} inventoryItems={inventoryItems} onDataChanged={refreshAllData} />
+                <LegacyOrderModal visible={showLegacyModal} onClose={() => { setShowLegacyModal(false); setEditOrder(null); }} inventoryItems={inventoryItems} userProfile={userProfile} onDataChanged={refreshAllData} editOrder={editOrder} />
                 <StockAdjustModal item={stockAdjustItem} type={stockAdjustType} onClose={() => { setStockAdjustItem(null); setStockAdjustType(null); }} onDataChanged={refreshAllData} userProfile={userProfile} />
                 <EditItemModal item={editingId ? inventoryItems.find(i => i.id === editingId) : null} inventoryItems={inventoryItems} db={db} onClose={() => setEditingId(null)} onDataChanged={refreshAllData} />
-                <DeleteConfirmModal visible={!!deleteOrderTargetId} orderId={deleteOrderTargetId} onClose={() => { setDeleteOrderTargetId(null); }} />
-                <ShippingModal visible={!!shippingOrderId} orderId={shippingOrderId} onClose={() => setShippingOrderId(null)} />
+                <DeleteConfirmModal visible={!!deleteOrderTargetId} orderId={deleteOrderTargetId} onClose={() => { setDeleteOrderTargetId(null); }} onDataChanged={refreshAllData} />
+                <ShippingModal visible={!!shippingOrderId} orderId={shippingOrderId} onClose={() => setShippingOrderId(null)} onDataChanged={refreshAllData} />
                 <ImageModal url={selectedImageUrl} onClose={() => setSelectedImageUrl(null)} />
                 <HistoryModal itemId={historyItemId} onClose={() => setHistoryItemId(null)} />
                 <ProductionModal visible={showProductionModal} onClose={() => setShowProductionModal(false)} inventoryItems={inventoryItems} onDataChanged={refreshAllData} />
+                <ReceiveProductionModal visible={!!receiveBatch} batch={receiveBatch} onClose={() => setReceiveBatch(null)} onDataChanged={refreshAllData} inventoryItems={inventoryItems} />
             </main>
 
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 sm:py-3 flex justify-around items-center shadow-lg safe-area-inset-bottom">
+            <nav className="fixed bottom-0 left-0 right-0 bg-black border-t-2 border-lime-glow px-2 sm:px-4 py-2 sm:py-3 flex justify-around items-center shadow-2xl safe-area-inset-bottom">
                 {tabs.map(tab => {
                     const isActive = activeTab === tab.id
                     const isAddTab = tab.id === 'add'
@@ -372,7 +437,7 @@ function InnerApp() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-600 text-white flex items-center justify-center shadow-xl hover:bg-green-700 active:bg-green-700 transition -mt-8 border-4 border-gray-50"
+                            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-pine text-lime-glow flex items-center justify-center shadow-2xl hover:scale-110 active:scale-105 transition-all -mt-8 border-4 border-black"
                         >
                             <tab.icon className="w-6 h-6" />
                         </button>
@@ -380,9 +445,9 @@ function InnerApp() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex flex-col items-center gap-1 py-2 px-2 sm:px-3 rounded-xl transition min-w-[60px] ${isActive
-                                ? 'text-green-600 bg-green-50'
-                                : 'text-gray-500 active:text-gray-700 active:bg-gray-50'
+                            className={`flex flex-col items-center gap-1 py-2 px-2 sm:px-3 rounded-2xl transition-all min-w-[60px] ${isActive
+                                ? 'text-emerald-pine bg-lime-glow shadow-lg'
+                                : 'text-gray-600 hover:text-lime-glow'
                                 }`}
                         >
                             <tab.icon className="w-5 h-5" />
