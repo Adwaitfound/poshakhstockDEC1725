@@ -32,6 +32,21 @@ export default function InventoryDetailModal({ item, onClose, onOpenEdit, onOpen
                             </>
                         )}
                     </div>
+
+                    {/* Stock Breakdown for Outfits */}
+                    {item.type === 'outfit' && item.stockBreakdown && (
+                        <div className="mt-4">
+                            <h4 className="font-semibold text-sm mb-2 text-gray-900 dark:text-white">Stock by Size</h4>
+                            <div className="grid grid-cols-5 gap-2">
+                                {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => (
+                                    <div key={size} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-center">
+                                        <p className="text-xs font-bold text-gray-600 dark:text-gray-400">{size}</p>
+                                        <p className="text-lg font-bold text-gray-900 dark:text-white">{item.stockBreakdown[size] || 0}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                     <div className="mt-4">
                         <button onClick={() => { onViewHistory && onViewHistory(item) }} className="w-full py-3 bg-white border rounded-xl">View Transaction History</button>
                         <button onClick={() => { onDelete && onDelete(item) }} className="w-full py-3 mt-2 text-red-600">Delete Item</button>

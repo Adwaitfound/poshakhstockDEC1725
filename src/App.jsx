@@ -21,6 +21,7 @@ import DeleteConfirmModal from './components/DeleteConfirmModal'
 import ShippingModal from './components/ShippingModal'
 import ImageModal from './components/ImageModal'
 import HistoryModal from './components/HistoryModal'
+import ChangeHistoryModal from './components/ChangeHistoryModal'
 import { getDb } from './firebase'
 import { collection, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDocs, query, where, increment, onSnapshot } from 'firebase/firestore'
 import { FABRICS_COLLECTION, ORDERS_COLLECTION, cleanNumber, getOutfitTotal } from './lib/utils'
@@ -100,6 +101,7 @@ function InnerApp() {
     const [productionBatches, setProductionBatches] = useState([])
     const [showProductionModal, setShowProductionModal] = useState(false)
     const [receiveBatch, setReceiveBatch] = useState(null)
+    const [changeHistoryVisible, setChangeHistoryVisible] = useState(false)
     // Modal & UI state
     const [viewInventoryItem, setViewInventoryItem] = useState(null)
     const [viewOrder, setViewOrder] = useState(null)
@@ -372,6 +374,17 @@ function InnerApp() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                         </button>
+                        {(userProfile?.name === 'Adwait' || userProfile?.name === 'Avani') && (
+                            <button
+                                onClick={() => setChangeHistoryVisible(true)}
+                                className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-600 text-lime-glow rounded-2xl flex items-center justify-center hover:bg-emerald-500 active:scale-95 transition-all shadow-lg"
+                                title="View Change History"
+                            >
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                        )}
                         {userProfile?.role === 'admin' && (
                             <button onClick={() => setActiveTab('import')} className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-600 text-lime-glow rounded-2xl flex items-center justify-center hover:bg-emerald-500 active:scale-95 transition-all shadow-lg" title="Import">
                                 <Icons.Table className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -415,7 +428,7 @@ function InnerApp() {
                 {/* Modals wired to state and handlers */}
                 <InventoryDetailModal item={viewInventoryItem} onClose={() => setViewInventoryItem(null)} onOpenEdit={openEditModal} onOpenStock={openStockModal} onViewHistory={(it) => { setViewInventoryItem(null); setHistoryItemId(it.id); }} onDelete={handleDeleteItem} />
                 <OrderDetailModal order={viewOrder} onClose={() => setViewOrder(null)} onEdit={(o) => { setViewOrder(null); setEditOrder(o); setShowLegacyModal(true); }} onShip={(o) => { setShippingOrderId(o.id); }} />
-                <CustomerDetailModal customer={viewCustomer} onClose={() => setViewCustomer(null)} allOrders={allOrders} inventoryItems={inventoryItems} userRole={userProfile?.role} />
+                <CustomerDetailModal customer={viewCustomer} onClose={() => setViewCustomer(null)} allOrders={allOrders} inventoryItems={inventoryItems} userRole={userProfile?.role} onDataChanged={refreshAllData} />
                 <LegacyOrderModal visible={showLegacyModal} onClose={() => { setShowLegacyModal(false); setEditOrder(null); }} inventoryItems={inventoryItems} userProfile={userProfile} onDataChanged={refreshAllData} editOrder={editOrder} />
                 <StockAdjustModal item={stockAdjustItem} type={stockAdjustType} onClose={() => { setStockAdjustItem(null); setStockAdjustType(null); }} onDataChanged={refreshAllData} userProfile={userProfile} />
                 <EditItemModal item={editingId ? inventoryItems.find(i => i.id === editingId) : null} inventoryItems={inventoryItems} db={db} onClose={() => setEditingId(null)} onDataChanged={refreshAllData} />
@@ -423,6 +436,7 @@ function InnerApp() {
                 <ShippingModal visible={!!shippingOrderId} orderId={shippingOrderId} onClose={() => setShippingOrderId(null)} onDataChanged={refreshAllData} />
                 <ImageModal url={selectedImageUrl} onClose={() => setSelectedImageUrl(null)} />
                 <HistoryModal itemId={historyItemId} onClose={() => setHistoryItemId(null)} />
+                <ChangeHistoryModal visible={changeHistoryVisible} onClose={() => setChangeHistoryVisible(false)} />
                 <ProductionModal visible={showProductionModal} onClose={() => setShowProductionModal(false)} inventoryItems={inventoryItems} onDataChanged={refreshAllData} />
                 <ReceiveProductionModal visible={!!receiveBatch} batch={receiveBatch} onClose={() => setReceiveBatch(null)} onDataChanged={refreshAllData} inventoryItems={inventoryItems} />
             </main>

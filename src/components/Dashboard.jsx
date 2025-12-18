@@ -145,6 +145,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
 
         const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
         const revPerMeter = totalFabricUsed > 0 ? totalRevenue / totalFabricUsed : 0
+        const avgDailyProfit = totalSold > 0 ? totalProfit / totalSold : 0
 
         // Get top customers by revenue
         const topCustomers = Object.values(customerRevenue)
@@ -159,7 +160,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
             totalProfit: totalProfit.toFixed(0),
             netProfit: parseInt(totalProfit),
             totalSold,
-            dailyProfit,
+            dailyProfit: avgDailyProfit.toFixed(0),
             revPerMeter: revPerMeter.toFixed(0),
             profitMargin: profitMargin.toFixed(1),
             breakdown: {
@@ -194,7 +195,7 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
                 <div className="bg-lime-glow p-8 rounded-3xl shadow-xl relative overflow-hidden">
                     <div className="grid grid-cols-2 gap-8">
                         <div>
-                            <p className="text-xs text-emerald-pine mb-3 font-medium uppercase tracking-wider">Your Current Balance</p>
+                            <p className="text-xs text-emerald-pine mb-3 font-medium uppercase tracking-wider">Your Total Revenue</p>
                             {userRole === 'admin' ? (
                                 <h3 className="text-5xl font-bold mb-4 text-emerald-pine">₹{parseInt(financialMetrics.totalRevenue).toLocaleString()}</h3>
                             ) : (
@@ -217,8 +218,8 @@ export default function Dashboard({ allOrders = [], inventoryItems = [], userRol
             {/* Key Metrics - 4 Cards Grid */}
             <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-lime-glow p-4 rounded-3xl shadow-lg border-2 border-lime-glow">
-                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Daily Profit</p>
-                    <p className="text-2xl font-bold text-emerald-pine">₹{(financialMetrics.netProfit / 30).toFixed(0)}</p>
+                    <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Avg Profit/Order</p>
+                    <p className="text-2xl font-bold text-emerald-pine">₹{parseInt(financialMetrics.dailyProfit).toLocaleString()}</p>
                 </div>
                 <div className="bg-lime-glow p-4 rounded-3xl shadow-lg border-2 border-lime-glow">
                     <p className="text-xs text-emerald-pine font-semibold uppercase mb-2">Rev / Meter</p>

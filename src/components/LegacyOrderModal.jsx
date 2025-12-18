@@ -9,7 +9,7 @@ export default function LegacyOrderModal({ visible, inventoryItems = [], userPro
         status: 'Sent to Tailor', sellingPrice: '', deductStock: false, cutAmount: '',
         notes: '', phone: '', address: '', discount: '', source: '', acquisitionCost: '',
         paymentMethod: 'Prepaid', city: '', state: '', codCharge: '', shippingCost: '',
-        codRemittanceDate: ''
+        codRemittanceDate: '', stitchingCost: '', fabricCost: '', deliveryCost: ''
     })
     const [isUploading, setIsUploading] = useState(false)
     const [error, setError] = useState('')
@@ -38,7 +38,10 @@ export default function LegacyOrderModal({ visible, inventoryItems = [], userPro
                 state: editOrder.state || '',
                 codCharge: editOrder.codCharge || '',
                 shippingCost: editOrder.shippingCost || '',
-                codRemittanceDate: editOrder.codRemittanceDate || ''
+                codRemittanceDate: editOrder.codRemittanceDate || '',
+                stitchingCost: editOrder.stitchingCost || '',
+                fabricCost: editOrder.fabricCost || '',
+                deliveryCost: editOrder.deliveryCost || ''
             })
         } else if (initialForm) {
             setForm(initialForm)
@@ -51,7 +54,7 @@ export default function LegacyOrderModal({ visible, inventoryItems = [], userPro
         setIsUploading(true)
         setError('')
         try {
-            const { orderNumber, customerName, outfitName, size, fabricId, status, sellingPrice, deductStock, cutAmount, notes, phone, address, discount, source, acquisitionCost, paymentMethod, city, state, codCharge, shippingCost, codRemittanceDate } = form
+            const { orderNumber, customerName, outfitName, size, fabricId, status, sellingPrice, deductStock, cutAmount, notes, phone, address, discount, source, acquisitionCost, paymentMethod, city, state, codCharge, shippingCost, codRemittanceDate, stitchingCost, fabricCost, deliveryCost } = form
             if (!orderNumber || !customerName) throw new Error("Order # and Customer Name are required")
 
             // Outfit Validation and Sold Increment
@@ -73,6 +76,9 @@ export default function LegacyOrderModal({ visible, inventoryItems = [], userPro
                 codCharge: parseFloat(codCharge) || 0,
                 shippingCost: parseFloat(shippingCost) || 0,
                 codRemittanceDate: codRemittanceDate || '',
+                stitchingCost: parseFloat(stitchingCost) || 0,
+                fabricCost: parseFloat(fabricCost) || 0,
+                deliveryCost: parseFloat(deliveryCost) || 0,
                 usedByEmail: userProfile?.name || 'Unknown', createdAt: serverTimestamp(), updatedAt: serverTimestamp()
             }
 
@@ -139,7 +145,7 @@ export default function LegacyOrderModal({ visible, inventoryItems = [], userPro
                 status: 'Sent to Tailor', sellingPrice: '', deductStock: false, cutAmount: '',
                 notes: '', phone: '', address: '', discount: '', source: '', acquisitionCost: '',
                 paymentMethod: 'Prepaid', city: '', state: '', codCharge: '', shippingCost: '',
-                codRemittanceDate: ''
+                codRemittanceDate: '', stitchingCost: '', fabricCost: '', deliveryCost: ''
             })
             if (onDataChanged) await onDataChanged()
             onClose()
@@ -215,9 +221,34 @@ export default function LegacyOrderModal({ visible, inventoryItems = [], userPro
                                 <option>Order Shipped (Completed)</option>
                                 <option>Cancelled</option>
                             </select>
-                            <div className="grid grid-cols-2 gap-3">
+                            <select className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm mb-2" value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })}>
+                                <option value="Prepaid">Prepaid</option>
+                                <option value="COD">COD</option>
+                            </select>
+                            {form.paymentMethod === 'COD' && (
+                                <input
+                                    type="number"
+                                    className="w-full p-2 bg-amber-900/30 text-white rounded-lg border-2 border-amber-500/40 text-sm mb-2"
+                                    placeholder="COD Charges (₹)"
+                                    value={form.acquisitionCost}
+                                    onChange={e => setForm({ ...form, acquisitionCost: e.target.value })}
+                                />
+                            )}
+                            <div className="grid grid-cols-2 gap-3 mb-2">
                                 <input type="number" className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm" placeholder="Selling Price (₹)" value={form.sellingPrice} onChange={e => setForm({ ...form, sellingPrice: e.target.value })} />
                                 <input type="number" className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm" placeholder="Discount (₹)" value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} />
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-900/80 p-3 rounded-xl border border-emerald-pine/60">
+                            <h4 className="text-xs font-bold text-lime-glow uppercase mb-2">Costs</h4>
+                            <div className="grid grid-cols-2 gap-3 mb-2">
+                                <input type="number" className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm" placeholder="Stitching Cost (₹)" value={form.stitchingCost} onChange={e => setForm({ ...form, stitchingCost: e.target.value })} />
+                                <input type="number" className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm" placeholder="Fabric Cost (₹)" value={form.fabricCost} onChange={e => setForm({ ...form, fabricCost: e.target.value })} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <input type="number" className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm" placeholder="Delivery Cost (₹)" value={form.deliveryCost} onChange={e => setForm({ ...form, deliveryCost: e.target.value })} />
+                                <input type="number" className="w-full p-2 bg-gray-800 text-white rounded-lg border-2 border-lime-glow/40 text-sm" placeholder="Acquisition/COD (₹)" value={form.acquisitionCost} onChange={e => setForm({ ...form, acquisitionCost: e.target.value })} />
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,11 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import OutfitDetailModal from './OutfitDetailModal'
 
 export default function Outfits({ allOrders = [], inventoryItems = [] }) {
+    const [selectedOutfit, setSelectedOutfit] = useState(null)
+    const [selectedInventoryItem, setSelectedInventoryItem] = useState(null)
+
     const cleanNumber = (val) => {
         if (typeof val === 'number') return val
         if (!val) return 0
@@ -132,22 +136,42 @@ export default function Outfits({ allOrders = [], inventoryItems = [] }) {
 
             {/* Inventory Outfits */}
             <div className="grid grid-cols-1 gap-4">
-                {outfitPerformanceList.length > 0 ? outfitPerformanceList.map((outfit, idx) => (
-                    <div key={idx} className="bg-white dark:bg-gray-950 p-4 rounded-2xl shadow-card border dark:border-gray-800 flex gap-4 items-center border dark:border-gray-800">
-                        <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                            <img src={outfit.imageUrl} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{outfit.name}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Stock: {outfit.stock}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="font-bold text-green-600">₹{(outfit.revenue / 1000).toFixed(1)}k</p>
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold">{outfit.qty} SOLD</p>
-                        </div>
-                    </div>
-                )) : <div className="text-center py-10 text-gray-400"><p>No outfits in inventory yet.</p><p className="text-xs mt-2">Add outfits in the Inventory tab</p></div>}
+                {outfitPerformanceList.length > 0 ? outfitPerformanceList.map((outfit, idx) => {
+                    const inventoryItem = inventoryItems.find(i => i.type === 'outfit' && i.name === outfit.name)
+                    return (
+                        <button
+                            key={idx}
+                            onClick={() => {
+                                setSelectedOutfit(outfit)
+                                setSelectedInventoryItem(inventoryItem)
+                            }}
+                            className="bg-white dark:bg-gray-950 p-4 rounded-2xl shadow-card border dark:border-gray-800 flex gap-4 items-center border dark:border-gray-800 hover:shadow-lg hover:border-lime-glow transition-all cursor-pointer"
+                        >
+                            <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                                <img src={outfit.imageUrl} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                                <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{outfit.name}</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Stock: {outfit.stock}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-green-600">₹{(outfit.revenue / 1000).toFixed(1)}k</p>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold">{outfit.qty} SOLD</p>
+                            </div>
+                        </button>
+                    )
+                }) : <div className="text-center py-10 text-gray-400"><p>No outfits in inventory yet.</p><p className="text-xs mt-2">Add outfits in the Inventory tab</p></div>}
             </div>
+
+            {/* Modal */}
+            <OutfitDetailModal
+                outfit={selectedOutfit}
+                inventoryItem={selectedInventoryItem}
+                onClose={() => {
+                    setSelectedOutfit(null)
+                    setSelectedInventoryItem(null)
+                }}
+            />
         </div>
     )
 }

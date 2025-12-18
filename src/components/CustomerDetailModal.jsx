@@ -3,7 +3,7 @@ import { Edit2, Save, X, AlertTriangle, Package, Trash2 } from 'lucide-react'
 import { getDb } from '../firebase'
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
 
-export default function CustomerDetailModal({ customer, onClose, allOrders = [], inventoryItems = [] }) {
+export default function CustomerDetailModal({ customer, onClose, allOrders = [], inventoryItems = [], onDataChanged }) {
     const [isEditing, setIsEditing] = useState(false)
     const [editForm, setEditForm] = useState({
         name: customer?.name || '',
@@ -68,6 +68,69 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
         const completedOrders = customerOrders.filter(o => o.status === 'Order Shipped (Completed)').length
 
         return { totalSpent, totalOrders, avgOrderValue, completedOrders }
+    }, [customerOrders])
+
+    // Calculate average profit percent per outfit
+    const outfitProfitStats = useMemo(() => {
+        const getOrderCost = (order) => {
+            if (order.importedData?.['Order Total']) {
+                const orderTotal = String(order.importedData['Order Total']).replace(/[^0-9.-]/g, '')
+                const parsed = parseFloat(orderTotal)
+                if (!isNaN(parsed) && parsed > 0) return parsed
+            }
+            if (order.orderTotal) return parseFloat(order.orderTotal)
+            if (order.finalSellingPrice) return parseFloat(order.finalSellingPrice)
+            if (order.importedData?.['Product Price']) {
+                const price = String(order.importedData['Product Price']).replace(/[^0-9.-]/g, '')
+                return parseFloat(price) || 0
+            }
+            if (order.importedData?.['Total']) {
+                const total = String(order.importedData['Total']).replace(/[^0-9.-]/g, '')
+                return parseFloat(total) || 0
+            }
+            return 0
+        }
+
+        const getTotalCost = (order) => {
+            return (parseFloat(order.stitchingCost) || 0) +
+                (parseFloat(order.fabricCost) || 0) +
+                (parseFloat(order.deliveryCost) || 0) +
+                (parseFloat(order.acquisitionCost) || 0)
+        }
+
+        const profitByOutfit = {}
+
+        customerOrders.forEach(order => {
+            const outfitName = order.outfitName || 'Unknown'
+            const sellingPrice = getOrderCost(order)
+            const totalCost = getTotalCost(order)
+            const profit = sellingPrice - totalCost
+
+            if (!profitByOutfit[outfitName]) {
+                profitByOutfit[outfitName] = {
+                    orders: [],
+                    totalProfit: 0,
+                    totalSelling: 0
+                }
+            }
+
+            profitByOutfit[outfitName].orders.push(order)
+            profitByOutfit[outfitName].totalProfit += profit
+            profitByOutfit[outfitName].totalSelling += sellingPrice
+        })
+
+        // Calculate average profit percent
+        const stats = {}
+        Object.entries(profitByOutfit).forEach(([outfit, data]) => {
+            const avgProfitPercent = data.totalSelling > 0 ? (data.totalProfit / data.totalSelling) * 100 : 0
+            stats[outfit] = {
+                count: data.orders.length,
+                avgProfitPercent: avgProfitPercent,
+                totalProfit: data.totalProfit
+            }
+        })
+
+        return stats
     }, [customerOrders])
 
     const handleSaveCustomer = async () => {
@@ -234,7 +297,7 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                             </div>
                             <div className="flex gap-2 pt-2">
                                 <button
-                                    onClick={handleSaveCustomer}
+                                    onClick={() => handleSaveCustomer().catch(err => console.error(err))}
                                     disabled={saving}
                                     className="flex-1 bg-lime-glow text-emerald-pine py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
@@ -355,6 +418,30 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                                 <Package className="w-4 h-4" />
                                 Order History ({customerOrders.length})
                             </h4>
+
+                            {/* Outfit Profit Stats */}
+                            {Object.keys(outfitProfitStats).length > 0 && (
+                                <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                                    {Object.entries(outfitProfitStats).map(([outfit, stats]) => (
+                                        <div
+                                            key={outfit}
+                                            className="bg-black/50 border border-emerald-pine/60 rounded-lg p-2"
+                                        >
+                                            <p className="text-xs text-lime-glow/70 font-semibold truncate">{outfit}</p>
+                                            <p className="text-xs text-white/70">Orders: {stats.count}</p>
+                                            <p className={`text-sm font-bold ${stats.avgProfitPercent >= 0 ? 'text-lime-glow' : 'text-red-400'
+                                                }`}>
+                                                {stats.avgProfitPercent.toFixed(1)}% profit
+                                            </p>
+                                            <p className={`text-xs font-semibold ${stats.totalProfit >= 0 ? 'text-lime-glow' : 'text-red-400'
+                                                }`}>
+                                                ₹{Math.round(stats.totalProfit)}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 {customerOrders.map((order, idx) => (
                                     <OrderRow
@@ -363,6 +450,7 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
                                         outfitOptions={outfitOptions}
                                         onUpdateOutfit={handleUpdateOutfitName}
                                         onDeleteOrder={handleDeleteOrder}
+                                        onDataChanged={onDataChanged}
                                     />
                                 ))}
                                 {customerOrders.length === 0 && (
@@ -379,17 +467,7 @@ export default function CustomerDetailModal({ customer, onClose, allOrders = [],
     )
 }
 
-function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
-    const [editing, setEditing] = useState(false)
-    const [selectedOutfit, setSelectedOutfit] = useState(order.outfitName)
-    const [selectedSize, setSelectedSize] = useState(order.size || 'M')
-
-    const formatDate = (date) => {
-        if (!date) return 'N/A'
-        const d = date.toDate ? date.toDate() : new Date(date)
-        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-    }
-
+function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder, onDataChanged }) {
     const getOrderCost = () => {
         // Priority: importedData Order Total > orderTotal > finalSellingPrice > Product Price > Total
         if (order.importedData?.['Order Total']) {
@@ -410,6 +488,120 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
         return 0
     }
 
+    const [editing, setEditing] = useState(false)
+    const [selectedOutfit, setSelectedOutfit] = useState(order.outfitName)
+    const [selectedSize, setSelectedSize] = useState(order.size || 'M')
+    const [editingCosts, setEditingCosts] = useState(false)
+    const [costs, setCosts] = useState({
+        stitchingCost: order.stitchingCost || 0,
+        fabricCost: order.fabricCost || 0,
+        deliveryCost: order.deliveryCost || 0,
+        acquisitionCost: order.acquisitionCost || 0
+    })
+    const [savingCosts, setSavingCosts] = useState(false)
+    const [editingPrice, setEditingPrice] = useState(false)
+    const [editedPrice, setEditedPrice] = useState(getOrderCost().toString())
+    const [savingPrice, setSavingPrice] = useState(false)
+    const [editingPaymentMethod, setEditingPaymentMethod] = useState(false)
+    const [paymentMethod, setPaymentMethod] = useState(order.paymentMethod || 'Prepaid')
+    const [savingPaymentMethod, setSavingPaymentMethod] = useState(false)
+
+    const formatDate = (date) => {
+        if (!date) return 'N/A'
+        const d = date.toDate ? date.toDate() : new Date(date)
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    }
+
+    const handleSaveCosts = async () => {
+        if (!order || !order.id) {
+            alert('Error: Order ID not found')
+            return
+        }
+
+        setSavingCosts(true)
+        try {
+            const db = getDb()
+            if (!db) {
+                alert('Error: Database not initialized')
+                return
+            }
+
+            await updateDoc(doc(db, 'production_orders', order.id), {
+                stitchingCost: parseFloat(costs.stitchingCost) || 0,
+                fabricCost: parseFloat(costs.fabricCost) || 0,
+                deliveryCost: parseFloat(costs.deliveryCost) || 0,
+                acquisitionCost: parseFloat(costs.acquisitionCost) || 0
+            })
+            setEditingCosts(false)
+            if (onDataChanged) await onDataChanged()
+        } catch (error) {
+            console.error('Error updating costs:', error)
+            alert('Error updating costs: ' + error.message)
+        } finally {
+            setSavingCosts(false)
+        }
+    }
+
+    const handleSavePrice = async () => {
+        if (!order || !order.id) {
+            alert('Error: Order ID not found')
+            return
+        }
+
+        const newPrice = parseFloat(editedPrice)
+        if (isNaN(newPrice) || newPrice <= 0) {
+            alert('Please enter a valid price')
+            return
+        }
+
+        setSavingPrice(true)
+        try {
+            const db = getDb()
+            if (!db) {
+                alert('Error: Database not initialized')
+                return
+            }
+
+            await updateDoc(doc(db, 'production_orders', order.id), {
+                orderTotal: newPrice
+            })
+            setEditingPrice(false)
+            if (onDataChanged) await onDataChanged()
+        } catch (error) {
+            console.error('Error updating price:', error)
+            alert('Error updating price: ' + error.message)
+        } finally {
+            setSavingPrice(false)
+        }
+    }
+
+    const handleSavePaymentMethod = async () => {
+        if (!order || !order.id) {
+            alert('Error: Order ID not found')
+            return
+        }
+
+        setSavingPaymentMethod(true)
+        try {
+            const db = getDb()
+            if (!db) {
+                alert('Error: Database not initialized')
+                return
+            }
+
+            await updateDoc(doc(db, 'production_orders', order.id), {
+                paymentMethod: paymentMethod
+            })
+            setEditingPaymentMethod(false)
+            if (onDataChanged) await onDataChanged()
+        } catch (error) {
+            console.error('Error updating payment method:', error)
+            alert('Error updating payment method: ' + error.message)
+        } finally {
+            setSavingPaymentMethod(false)
+        }
+    }
+
     return (
         <div className={`${order.matchesInventory ? 'bg-gray-900/80 border-emerald-pine/60' : 'bg-gray-900/80 border-amber-500/60'} border-2 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow`}>
             <div className="flex justify-between items-start gap-4">
@@ -428,7 +620,7 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                             </span>
                         )}
                         <button
-                            onClick={() => onDeleteOrder(order.id, order.orderNumber)}
+                            onClick={() => onDeleteOrder(order.id, order.orderNumber).catch(err => console.error(err))}
                             className="ml-auto text-red-500 p-1.5 hover:bg-red-50/40 rounded-lg transition-colors"
                             title="Delete order"
                         >
@@ -467,7 +659,7 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => {
-                                        onUpdateOutfit(order.id, selectedOutfit, selectedSize)
+                                        onUpdateOutfit(order.id, selectedOutfit, selectedSize).catch(err => console.error(err))
                                         setEditing(false)
                                     }}
                                     className="bg-lime-glow text-emerald-pine px-4 py-2 rounded-lg text-xs font-bold hover:bg-lime-glow/90 shadow-sm flex-1"
@@ -501,14 +693,92 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-3 text-xs text-white/70">
+                    <div className="flex items-center gap-3 text-xs text-white/70 flex-wrap">
                         <span>📅 {formatDate(order.createdAt)}</span>
                         {order.size && <span className="bg-black/20 border border-lime-glow/30 px-2 py-0.5 rounded font-semibold text-white">Size {order.size}</span>}
+                        {editingPaymentMethod ? (
+                            <div className="flex items-center gap-1">
+                                <select
+                                    value={paymentMethod}
+                                    onChange={e => setPaymentMethod(e.target.value)}
+                                    className="p-1 bg-black/50 border border-lime-glow/50 rounded text-xs text-white"
+                                >
+                                    <option value="Prepaid">Prepaid</option>
+                                    <option value="COD">COD</option>
+                                </select>
+                                <button
+                                    onClick={() => handleSavePaymentMethod().catch(err => console.error(err))}
+                                    disabled={savingPaymentMethod}
+                                    className="bg-lime-glow text-emerald-pine px-1.5 py-0.5 rounded text-xs font-bold hover:bg-lime-glow/90 disabled:opacity-50"
+                                >
+                                    {savingPaymentMethod ? '...' : '✓'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setPaymentMethod(order.paymentMethod || 'Prepaid')
+                                        setEditingPaymentMethod(false)
+                                    }}
+                                    className="border border-lime-glow text-lime-glow px-1.5 py-0.5 rounded text-xs font-bold hover:bg-lime-glow/10"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ) : (
+                            <span
+                                className={`px-2 py-0.5 rounded font-semibold cursor-pointer hover:opacity-80 ${(order.paymentMethod || 'Prepaid') === 'COD'
+                                    ? 'bg-amber-600/20 border border-amber-600/60 text-amber-300'
+                                    : 'bg-emerald-700/20 border border-emerald-700/60 text-emerald-300'
+                                    }`}
+                                onClick={() => setEditingPaymentMethod(true)}
+                                title="Click to edit"
+                            >
+                                {order.paymentMethod || 'Prepaid'}
+                            </span>
+                        )}
                     </div>
                 </div>
 
                 <div className="text-right flex-shrink-0">
-                    <p className="text-2xl font-bold text-lime-glow">₹{getOrderCost()}</p>
+                    {editingPrice ? (
+                        <div className="flex flex-col gap-2 items-end">
+                            <input
+                                type="number"
+                                value={editedPrice}
+                                onChange={e => setEditedPrice(e.target.value)}
+                                className="w-24 p-1 bg-black/50 border border-lime-glow/50 rounded text-xs text-white font-bold text-right"
+                                placeholder="₹"
+                            />
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => handleSavePrice().catch(err => console.error(err))}
+                                    disabled={savingPrice}
+                                    className="bg-lime-glow text-emerald-pine px-2 py-1 rounded text-xs font-bold hover:bg-lime-glow/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {savingPrice ? '...' : '✓'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditedPrice(getOrderCost().toString())
+                                        setEditingPrice(false)
+                                    }}
+                                    className="border border-lime-glow text-lime-glow px-2 py-1 rounded text-xs font-bold hover:bg-lime-glow/10"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-end gap-1">
+                            <p className="text-2xl font-bold text-lime-glow">₹{getOrderCost()}</p>
+                            <button
+                                onClick={() => setEditingPrice(true)}
+                                className="text-lime-glow p-1 hover:bg-lime-glow/20 rounded-lg transition-colors text-xs"
+                                title="Edit price"
+                            >
+                                ✏️
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -526,6 +796,112 @@ function OrderRow({ order, outfitOptions, onUpdateOutfit, onDeleteOrder }) {
                     </div>
                 </div>
             )}
+
+            {/* Cost Breakdown */}
+            <div className="mt-3 pt-3 border-t border-emerald-pine/60">
+                <div className="flex justify-between items-center mb-2">
+                    <p className="text-xs font-bold text-lime-glow uppercase">💰 Costs</p>
+                    {!editingCosts && (
+                        <button
+                            onClick={() => setEditingCosts(true)}
+                            className="text-lime-glow p-1 hover:bg-lime-glow/20 rounded-lg transition-colors text-xs"
+                            title="Edit costs"
+                        >
+                            ✏️ Edit
+                        </button>
+                    )}
+                </div>
+                {editingCosts ? (
+                    <div className="space-y-2 mb-2">
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-xs text-lime-glow/70">Stitching</label>
+                                <input
+                                    type="number"
+                                    value={costs.stitchingCost}
+                                    onChange={e => setCosts({ ...costs, stitchingCost: e.target.value })}
+                                    className="w-full p-1 bg-black/50 border border-lime-glow/50 rounded text-xs text-white"
+                                    placeholder="₹"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-lime-glow/70">Fabric</label>
+                                <input
+                                    type="number"
+                                    value={costs.fabricCost}
+                                    onChange={e => setCosts({ ...costs, fabricCost: e.target.value })}
+                                    className="w-full p-1 bg-black/50 border border-lime-glow/50 rounded text-xs text-white"
+                                    placeholder="₹"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-lime-glow/70">Delivery</label>
+                                <input
+                                    type="number"
+                                    value={costs.deliveryCost}
+                                    onChange={e => setCosts({ ...costs, deliveryCost: e.target.value })}
+                                    className="w-full p-1 bg-black/50 border border-lime-glow/50 rounded text-xs text-white"
+                                    placeholder="₹"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-lime-glow/70">{paymentMethod === 'COD' ? 'COD Charge' : 'Acq/Other'}</label>
+                                <input
+                                    type="number"
+                                    value={costs.acquisitionCost}
+                                    onChange={e => setCosts({ ...costs, acquisitionCost: e.target.value })}
+                                    className={`w-full p-1 rounded text-xs text-white ${paymentMethod === 'COD'
+                                        ? 'bg-amber-900/30 border border-amber-500/50'
+                                        : 'bg-black/50 border border-lime-glow/50'
+                                        }`}
+                                    placeholder="₹"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => handleSaveCosts().catch(err => console.error(err))}
+                                disabled={savingCosts}
+                                className="flex-1 bg-lime-glow text-emerald-pine px-2 py-1 rounded text-xs font-bold hover:bg-lime-glow/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {savingCosts ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                                onClick={() => setEditingCosts(false)}
+                                className="flex-1 border border-lime-glow text-lime-glow px-2 py-1 rounded text-xs font-bold hover:bg-lime-glow/10"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-4 gap-2 text-xs">
+                        <div className="bg-black/50 border border-emerald-pine/60 px-2 py-1 rounded">
+                            <p className="text-lime-glow/70">Stitching</p>
+                            <p className="font-bold text-white">₹{(costs.stitchingCost || 0).toFixed(0)}</p>
+                        </div>
+                        <div className="bg-black/50 border border-emerald-pine/60 px-2 py-1 rounded">
+                            <p className="text-lime-glow/70">Fabric</p>
+                            <p className="font-bold text-white">₹{(costs.fabricCost || 0).toFixed(0)}</p>
+                        </div>
+                        <div className="bg-black/50 border border-emerald-pine/60 px-2 py-1 rounded">
+                            <p className="text-lime-glow/70">Delivery</p>
+                            <p className="font-bold text-white">₹{(costs.deliveryCost || 0).toFixed(0)}</p>
+                        </div>
+                        <div className={`px-2 py-1 rounded ${paymentMethod === 'COD'
+                                ? 'bg-amber-900/20 border border-amber-500/60'
+                                : 'bg-black/50 border border-emerald-pine/60'
+                            }`}>
+                            <p className={paymentMethod === 'COD' ? 'text-amber-300/70' : 'text-lime-glow/70'}>
+                                {paymentMethod === 'COD' ? 'COD Charge' : 'Acq/Other'}
+                            </p>
+                            <p className={`font-bold ${paymentMethod === 'COD' ? 'text-amber-300' : 'text-white'}`}>
+                                ₹{(costs.acquisitionCost || 0).toFixed(0)}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
